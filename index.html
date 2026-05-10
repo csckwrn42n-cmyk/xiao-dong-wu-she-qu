@@ -696,11 +696,16 @@ body {
         <div id="wdFeedback"></div>
         <div id="wdLoading"></div>
         <div class="wd-actions">
-          <button class="wd-btn-primary" id="wdSubmitBtn" onclick="selectPhoto()">📷 拍照 / 选图</button>
+          <div style="display:flex;gap:6px" id="wdPhotoBtns">
+            <button class="wd-btn-primary" onclick="takePhoto()" style="flex:1">📷 拍照</button>
+            <button class="wd-btn-secondary" onclick="pickFromAlbum()" style="flex:1">🖼️ 相册</button>
+          </div>
+          <button class="wd-btn-primary" id="wdSubmitBtn" style="display:none" onclick="selectPhoto()"></button>
           <button class="wd-btn-secondary" id="wdCompleteBtn" style="display:none" onclick="completeWishDetail()">⭐ 完成心愿！</button>
         </div>
       </div>
-      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
+      <input type="file" id="albumInput" accept="image/*" style="display:none" onchange="handlePhotoSelect(event)">
     </div>
 
 <!-- Toast -->
@@ -903,16 +908,18 @@ function approachWish(id) {
   document.getElementById('wdPreviewArea').innerHTML = '<div class="wd-preview-placeholder" id="wdPlaceholder"><div class="pp-icon">📸</div><div class="pp-text">点击拍照或从相册选择</div></div>';
   document.getElementById('wdFeedback').innerHTML = '';
   document.getElementById('wdLoading').innerHTML = '';
-  document.getElementById('wdSubmitBtn').style.display = '';
+  document.getElementById('wdPhotoBtns').style.display = 'flex';
+  document.getElementById('wdSubmitBtn').style.display = 'none';
   document.getElementById('wdCompleteBtn').style.display = 'none';
-  document.getElementById('wdSubmitBtn').textContent = '📷 拍照 / 选图';
-  document.getElementById('wdSubmitBtn').disabled = false;
 
   document.getElementById('wishDetailOverlay').classList.add('show');
 }
 
-function selectPhoto() {
-  document.getElementById('photoInput').click();
+function takePhoto() {
+  document.getElementById('cameraInput').click();
+}
+function pickFromAlbum() {
+  document.getElementById('albumInput').click();
 }
 
 function handlePhotoSelect(e) {
@@ -924,19 +931,24 @@ function handlePhotoSelect(e) {
     const area = document.getElementById('wdPreviewArea');
     area.classList.add('has-image');
     area.innerHTML = '<img src="'+_wdImageData+'" alt="preview">';
-    document.getElementById('wdSubmitBtn').textContent = '🔍 让小动物看看 →';
+    document.getElementById('wdPhotoBtns').style.display = 'none';
+    document.getElementById('wdSubmitBtn').style.display = '';
+    document.getElementById('wdSubmitBtn').textContent = '🔍 让小动物看看';
     document.getElementById('wdSubmitBtn').disabled = false;
+    document.getElementById('wdSubmitBtn').onclick = submitWishToAI;
   };
   reader.readAsDataURL(file);
-  // Reset input so same file can be picked again
   e.target.value = '';
 }
 
-document.getElementById('wdSubmitBtn').addEventListener('click', function() {
-  if (this.textContent.includes('让小动物看看')) {
-    submitWishToAI();
-  }
-});
+function selectPhoto() {
+  // kept for compatibility
+}
+
+// ===== Gemini Vision =====
+let geminiKey = localStorage.getItem('gemini_key') || '';
+
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 async function submitWishToAI() {
   if (!_wdImageData || !_wdAnimal) return;
@@ -944,28 +956,59 @@ async function submitWishToAI() {
   const loading = document.getElementById('wdLoading');
   const btn = document.getElementById('wdSubmitBtn');
 
+  // If no Gemini key, show setup prompt
+  if (!geminiKey) {
+    const key = prompt('🔑 需要 Google Gemini API Key（免费）才能让小动物识别照片。\n\n获取方式：\n1. 打开 https://aistudio.google.com/apikey\n2. 点击 Get API Key → 创建新密钥\n3. 复制粘贴到这里即可\n\n粘贴你的 Gemini API Key：');
+    if (key && key.trim()) {
+      geminiKey = key.trim();
+      localStorage.setItem('gemini_key', geminiKey);
+    } else {
+      // Fallback: complete without vision
+      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：虽然我看不到照片，但我能感觉到你拍了很棒的东西！谢谢你～⭐</div>';
+      document.getElementById('wdCompleteBtn').style.display = '';
+      btn.style.display = 'none';
+      return;
+    }
+  }
+
   btn.disabled = true;
-  btn.textContent = '🔍 小动物正在看…';
+  btn.textContent = '🔍 正在看…';
   loading.innerHTML = '<div class="wd-loading">小动物正在仔细看你的照片…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
   feedback.innerHTML = '';
 
+  // Extract base64 data (remove data:image/...;base64, prefix)
+  const base64Data = _wdImageData.split(',')[1];
+  const mimeType = _wdImageData.split(';')[0].split(':')[1];
+
+  // Build Gemini request parts
+  const parts = [
+    {text: '你是一只'+_wdAnimal.emoji+' '+_wdAnimal.name+'，是社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到的画面、颜色、物体和你的感受。语气要像真实的小动物，2-3句话，自然口语化，只用中文回复。'},
+    {inlineData: {mimeType: mimeType, data: base64Data}}
+  ];
+
   try {
-    const resp = await fetch('https://api.deepseek.com/chat/completions', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-      body: JSON.stringify({
-        model:'deepseek-chat',
-        messages:[
-          {role:'system',content:'你是'+_wdAnimal.name+'，'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。你收到了用户拍的照片，请根据你的性格描述你从照片里看到了什么、感受到了什么。语气要像真实的小动物在说话，2-3句话，自然口语化。'},
-          {role:'user',content:[{type:'text',text:'我拍了一张照片给你看！你觉得怎么样？'},{type:'image_url',image_url:{url:_wdImageData}}]}
-        ],
-        temperature:0.9,
-        max_tokens:200,
-      })
-    });
-    if (!resp.ok) { const e=await resp.json(); throw new Error(e.error?.message||'API error'); }
+    const resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+geminiKey,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents: [{role:'user', parts: parts}],
+          generationConfig: {temperature:0.9, maxOutputTokens:200}
+        })
+      }
+    );
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      const msg = err.error?.message || 'HTTP '+resp.status;
+      throw new Error(msg);
+    }
+
     const data = await resp.json();
-    const text = data.choices[0].message.content.trim();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text) throw new Error('Empty response');
 
     loading.innerHTML = '';
     feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+text+'</div>';
@@ -974,9 +1017,17 @@ async function submitWishToAI() {
 
   } catch(e) {
     loading.innerHTML = '';
-    feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 '+_wdAnimal.emoji+' '+_wdAnimal.name+'：哇，这张照片让我有点眼花……不过没关系，我很开心你拍了给我看！</div>';
+    // If key is invalid, reset it
+    if (e.message.includes('API_KEY_INVALID') || e.message.includes('not found') || e.message.includes('PERMISSION_DENIED')) {
+      geminiKey = '';
+      localStorage.removeItem('gemini_key');
+      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 API Key 好像不对，刷新页面重新粘贴吧</div>';
+    } else {
+      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 小动物有点眼花……不过还是很开心你拍了照片！<br><span style="font-size:10px;color:var(--text-light)">('+e.message.substring(0,50)+')</span></div>';
+    }
     document.getElementById('wdCompleteBtn').style.display = '';
-    console.warn('AI vision error:', e);
+    btn.style.display = 'none';
+    console.warn('Gemini vision error:', e);
   }
 }
 
@@ -1068,8 +1119,9 @@ async function handleResponse(action) {
   if (state.apiKey) {
     try {
       resp = await callDeepSeek(a, action);
+      console.log('AI response ok:', resp.substring(0,30));
     } catch(e) {
-      console.warn('AI API failed, using fallback:', e);
+      console.warn('AI chat failed, using fallback:', e);
       resp = getFallbackResp(a, action);
     }
   } else {
@@ -1099,7 +1151,7 @@ async function callDeepSeek(a, action) {
   };
   const msg = actionMap[action] || actionMap.casual;
 
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
     body: JSON.stringify({
@@ -1112,7 +1164,10 @@ async function callDeepSeek(a, action) {
       max_tokens:150,
     })
   });
-  if (!res.ok) throw new Error('API error: '+res.status);
+  if (!res.ok) {
+    const errText = await res.text().catch(()=>'');
+    throw new Error('API '+res.status+': '+errText);
+  }
   const data = await res.json();
   return data.choices[0].message.content.trim();
 }
