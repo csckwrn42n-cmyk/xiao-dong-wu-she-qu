@@ -455,6 +455,66 @@ body {
 .report-empty{text-align:center;padding:40px 20px;color:var(--text-light)}
 .report-empty .re-icon{font-size:40px;margin-bottom:10px}
 
+/* ===== WISH DETAIL ===== */
+.wish-detail-overlay{
+  display:none;position:absolute;top:0;left:0;right:0;bottom:0;
+  z-index:25;background:rgba(10,8,4,0.65);
+  flex-direction:column;justify-content:flex-end;
+}
+.wish-detail-overlay.show{display:flex}
+.wd-card{
+  background:var(--card-bg);border-radius:24px 24px 0 0;
+  padding:20px 20px env(safe-area-inset-bottom,16px);
+  box-shadow:0 -8px 40px rgba(0,0,0,0.3);
+  animation:wu 0.35s ease;
+}
+@keyframes wu{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.wd-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.wd-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px}
+.wd-info{flex:1}
+.wd-name{font-size:14px;font-weight:700;color:var(--text-main)}
+.wd-role{font-size:10px;color:var(--text-light)}
+.wd-wish{font-size:13px;color:var(--text-sub);line-height:1.6;margin-bottom:14px;padding:12px;background:white;border-radius:12px;border:1px solid var(--border)}
+.wd-preview-area{
+  width:100%;min-height:140px;border:2px dashed #d0c8b8;
+  border-radius:14px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:pointer;transition:0.2s;margin-bottom:12px;
+  background:#f8f4f0;overflow:hidden;
+  position:relative;
+}
+.wd-preview-area:active{background:#f0e8e0}
+.wd-preview-area.has-image{border-style:solid;border-color:var(--accent);padding:0}
+.wd-preview-area img{width:100%;height:100%;object-fit:cover;display:block}
+.wd-preview-placeholder{text-align:center;padding:20px}
+.wd-preview-placeholder .pp-icon{font-size:36px;margin-bottom:6px}
+.wd-preview-placeholder .pp-text{font-size:12px;color:var(--text-light)}
+.wd-actions{display:flex;gap:8px}
+.wd-actions button{
+  flex:1;padding:12px;border:none;border-radius:14px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:0.2s;
+}
+.wd-btn-primary{background:var(--accent);color:white}
+.wd-btn-primary:hover{background:var(--accent-hover)}
+.wd-btn-primary:disabled{background:#d0c8b8;cursor:not-allowed}
+.wd-btn-secondary{background:#e0d6cc;color:var(--text-main)}
+.wd-btn-secondary:hover{background:#d0c6b8}
+.wd-btn-close{position:absolute;top:16px;right:18px;background:rgba(0,0,0,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:12px;cursor:pointer;z-index:26;display:flex;align-items:center;justify-content:center}
+.wd-btn-close:hover{background:rgba(0,0,0,0.4)}
+.wd-loading{text-align:center;padding:16px 0;color:var(--text-light);font-size:12px}
+.wd-loading .lds-ellipsis{display:inline-block;position:relative;width:40px;height:12px}
+.wd-loading .lds-ellipsis div{position:absolute;top:3px;width:8px;height:8px;border-radius:50%;background:var(--accent);animation-timing-function:cubic-bezier(0,1,1,0)}
+.wd-loading .lds-ellipsis div:nth-child(1){left:4px;animation:ld1 0.6s infinite}
+.wd-loading .lds-ellipsis div:nth-child(2){left:4px;animation:ld2 0.6s infinite}
+.wd-loading .lds-ellipsis div:nth-child(3){left:16px;animation:ld2 0.6s infinite}
+.wd-loading .lds-ellipsis div:nth-child(4){left:28px;animation:ld3 0.6s infinite}
+@keyframes ld1{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes ld3{0%{transform:scale(1)}100%{transform:scale(0)}}
+@keyframes ld2{0%{transform:translate(0,0)}100%{transform:translate(12px,0)}}
+.wd-feedback{text-align:center;font-size:13px;color:var(--text-main);line-height:1.7;padding:12px;background:#fff8f0;border-radius:12px;margin-bottom:12px;border:1px solid #e8d5b0;animation:fi 0.4s ease}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
 /* ===== TOAST ===== */
 .toast{
   position:absolute;top:50px;left:50%;transform:translateX(-50%);
@@ -613,6 +673,34 @@ body {
     <div class="friends-panel" id="friendsPanel">
       <div class="friends-card" id="friendsCard"></div>
       <button class="fc-close" onclick="toggleFriends()">关闭</button>
+    </div>
+
+    <!-- ===== WISH DETAIL ===== -->
+    <div class="wish-detail-overlay" id="wishDetailOverlay">
+      <button class="wd-btn-close" onclick="closeWishDetail()">✕</button>
+      <div class="wd-card" id="wishDetailCard">
+        <div class="wd-header">
+          <div class="wd-avatar" id="wdAvatar">🐰</div>
+          <div class="wd-info">
+            <div class="wd-name" id="wdName">糯糯</div>
+            <div class="wd-role" id="wdRole">花艺师</div>
+          </div>
+        </div>
+        <div class="wd-wish" id="wdWish">帮我拍一朵花吧 🌸</div>
+        <div class="wd-preview-area" id="wdPreviewArea" onclick="selectPhoto()">
+          <div class="wd-preview-placeholder" id="wdPlaceholder">
+            <div class="pp-icon">📸</div>
+            <div class="pp-text">点击拍照或从相册选择</div>
+          </div>
+        </div>
+        <div id="wdFeedback"></div>
+        <div id="wdLoading"></div>
+        <div class="wd-actions">
+          <button class="wd-btn-primary" id="wdSubmitBtn" onclick="selectPhoto()">📷 拍照 / 选图</button>
+          <button class="wd-btn-secondary" id="wdCompleteBtn" style="display:none" onclick="completeWishDetail()">⭐ 完成心愿！</button>
+        </div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
     </div>
 
 <!-- Toast -->
@@ -792,10 +880,127 @@ function completeWish(id) {
 }
 
 // ==================== APPROACH ANIMALS ====================
+// ===== WISH DETAIL (photo upload) =====
+let _wdAnimal = null;
+let _wdImageData = null;
+
 function approachWish(id) {
   const w = state.wishes.find(x => x.id === id);
-  if (!w || w.done) return;
-  completeWish(id);
+  if (!w || w.done) { showToast('这个心愿已经完成啦 ✨'); return; }
+  const a = outdoorAnimals.find(x => x.id === id);
+  if (!a) return;
+  _wdAnimal = a;
+  _wdImageData = null;
+
+  document.getElementById('wdAvatar').style.background = a.color;
+  document.getElementById('wdAvatar').textContent = a.emoji;
+  document.getElementById('wdName').textContent = a.name;
+  document.getElementById('wdRole').textContent = a.role;
+  document.getElementById('wdWish').textContent = a.wish;
+
+  // Reset UI
+  document.getElementById('wdPreviewArea').classList.remove('has-image');
+  document.getElementById('wdPreviewArea').innerHTML = '<div class="wd-preview-placeholder" id="wdPlaceholder"><div class="pp-icon">📸</div><div class="pp-text">点击拍照或从相册选择</div></div>';
+  document.getElementById('wdFeedback').innerHTML = '';
+  document.getElementById('wdLoading').innerHTML = '';
+  document.getElementById('wdSubmitBtn').style.display = '';
+  document.getElementById('wdCompleteBtn').style.display = 'none';
+  document.getElementById('wdSubmitBtn').textContent = '📷 拍照 / 选图';
+  document.getElementById('wdSubmitBtn').disabled = false;
+
+  document.getElementById('wishDetailOverlay').classList.add('show');
+}
+
+function selectPhoto() {
+  document.getElementById('photoInput').click();
+}
+
+function handlePhotoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    _wdImageData = ev.target.result;
+    const area = document.getElementById('wdPreviewArea');
+    area.classList.add('has-image');
+    area.innerHTML = '<img src="'+_wdImageData+'" alt="preview">';
+    document.getElementById('wdSubmitBtn').textContent = '🔍 让小动物看看 →';
+    document.getElementById('wdSubmitBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+  // Reset input so same file can be picked again
+  e.target.value = '';
+}
+
+document.getElementById('wdSubmitBtn').addEventListener('click', function() {
+  if (this.textContent.includes('让小动物看看')) {
+    submitWishToAI();
+  }
+});
+
+async function submitWishToAI() {
+  if (!_wdImageData || !_wdAnimal) return;
+  const feedback = document.getElementById('wdFeedback');
+  const loading = document.getElementById('wdLoading');
+  const btn = document.getElementById('wdSubmitBtn');
+
+  btn.disabled = true;
+  btn.textContent = '🔍 小动物正在看…';
+  loading.innerHTML = '<div class="wd-loading">小动物正在仔细看你的照片…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+  feedback.innerHTML = '';
+
+  try {
+    const resp = await fetch('https://api.deepseek.com/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
+      body: JSON.stringify({
+        model:'deepseek-chat',
+        messages:[
+          {role:'system',content:'你是'+_wdAnimal.name+'，'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。你收到了用户拍的照片，请根据你的性格描述你从照片里看到了什么、感受到了什么。语气要像真实的小动物在说话，2-3句话，自然口语化。'},
+          {role:'user',content:[{type:'text',text:'我拍了一张照片给你看！你觉得怎么样？'},{type:'image_url',image_url:{url:_wdImageData}}]}
+        ],
+        temperature:0.9,
+        max_tokens:200,
+      })
+    });
+    if (!resp.ok) { const e=await resp.json(); throw new Error(e.error?.message||'API error'); }
+    const data = await resp.json();
+    const text = data.choices[0].message.content.trim();
+
+    loading.innerHTML = '';
+    feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+text+'</div>';
+    btn.style.display = 'none';
+    document.getElementById('wdCompleteBtn').style.display = '';
+
+  } catch(e) {
+    loading.innerHTML = '';
+    feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 '+_wdAnimal.emoji+' '+_wdAnimal.name+'：哇，这张照片让我有点眼花……不过没关系，我很开心你拍了给我看！</div>';
+    document.getElementById('wdCompleteBtn').style.display = '';
+    console.warn('AI vision error:', e);
+  }
+}
+
+function getAnimalPersonality(id) {
+  const map = {
+    nuannuo:'温柔软萌，喜欢花和可爱的东西，说话带波浪线～',
+    xiaoju:'傲娇嘴硬心软，对审美很挑剔但其实很容易被感动，说话有点酷',
+    wangcai:'阳光热情大暖男，什么都觉得好棒，说话很有活力带感叹号',
+    gugu:'沉稳哲学家，喜欢观察细节，说话慢悠悠的但每句都有分量',
+  };
+  return map[id] || '温暖善良，喜欢和用户聊天';
+}
+
+function completeWishDetail() {
+  if (!_wdAnimal) return;
+  completeWish(_wdAnimal.id);
+  closeWishDetail();
+  showToast(_wdAnimal.emoji+' 心愿完成！⭐+12');
+}
+
+function closeWishDetail() {
+  document.getElementById('wishDetailOverlay').classList.remove('show');
+  _wdAnimal = null;
+  _wdImageData = null;
 }
 
 function approachIndoor(id) {
