@@ -1076,7 +1076,7 @@ function showResponseOptions(a) {
     {text:'💬 随便聊聊', action:'casual'},
   ];
   c.innerHTML = options.map((o,i) =>
-    `<div class="response-option" style="animation-delay:${0.1+i*0.05}s" onclick="handleResponse('${o.action}')">${o.text}</div>`
+    `<div class="response-option" style="animation-delay:${0.1+i*0.05}s" onclick="handleResponse('${o.action}','${o.text}')">${o.text}</div>`
   ).join('');
   c.innerHTML += `<div class="dialogue-input-row"><input type="text" id="freeInput" placeholder="或者随便说点什么…" onkeydown="if(event.key==='Enter')handleFreeInput()"><button onclick="handleFreeInput()">↑</button></div>`;
 }
@@ -1087,24 +1087,22 @@ function handleFreeInput() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-  handleResponse('chat');
+  handleResponse('chat', text);
 }
 
-async function handleResponse(action) {
+async function handleResponse(action, userText) {
   const a = state.currentAnimal;
   if (!a || state.isAiProcessing) return;
-  document.getElementById('dialogueResponses').innerHTML = '<div style="text-align:right;font-size:11px;color:var(--text-light);padding:6px">💭 你在跟' + a.name + '聊天…</div>';
+  document.getElementById('dialogueResponses').innerHTML = '<div style="text-align:right;font-size:11px;color:var(--text-light);padding:6px">💭 你跟' + a.name + '说：' + (userText || '…') + '</div>';
   state.isAiProcessing = true;
   document.getElementById('dialogueText').textContent = '…';
   document.getElementById('dialogueText').classList.add('typing-cursor');
 
   let resp;
   try {
-    resp = await callZhipuChat(a, action);
-    console.log('AI chat ok:', resp.substring(0,40));
+    resp = await callZhipuChat(a, action, userText);
   } catch(e) {
     console.warn('AI chat failed:', e);
-    // Show error in dialogue so user can see what went wrong
     showDialogueText('（小动物歪了歪头……' + e.message.substring(0,60) + '）\n' + getFallbackResp(a, action));
     state.isAiProcessing = false;
     setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
@@ -1115,27 +1113,36 @@ async function handleResponse(action) {
   setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
 }
 
-async function callZhipuChat(a, action) {
+async function callZhipuChat(a, action, userText) {
   const systemPrompts = {
-    melody:'你是Melody，一只金丝雀，社区里的流行歌手。元气、爱美、说话带感叹号，会用音乐比喻。回复2-3句话，自然口语化。',
-    yanshu:'你是砚书，一只赤狐，社区里的小说家。细腻敏感，共情力强，说话温和有礼。会把日常变成故事。回复2-3句话。',
-    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃，话里经常带食物比喻。回复2-3句话。',
-    adu:'你是阿渡，一只绿头鸭，在渡口开咖啡馆。沉默寡言但观察力极强，话少但说到点子上。回复1-2句即可。',
+    melody:'你是Melody，一只金丝雀，社区里的流行歌手。元气、爱美、说话带感叹号，会用音乐比喻。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话，自然口语化。',
+    yanshu:'你是砚书，一只赤狐，社区里的小说家。细腻敏感，共情力强，说话温和有礼。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话。',
+    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话。',
+    adu:'你是阿渡，一只绿头鸭，在渡口开咖啡馆。沉默寡言但观察力极强，话少但说到点子上。现在用户正在跟你聊天，请根据ta的话自然回应。回复1-2句即可。',
   };
-  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。回复2-3句话。';
+  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。请根据对方说的话自然回应。回复2-3句话。';
 
+  // If user typed something, send it directly to the API
+  if (userText) {
+    return await callZhipu(ZHIPU_CHAT_MODEL, [
+      {role:'system', content: sys},
+      {role:'user', content: userText}
+    ], 0.85, 200);
+  }
+
+  // For option clicks without custom text, use default prompts
   const actionMap = {
-    photo:'我给你看一张今天拍的照片。请根据你的性格描述你从照片里想象到的画面、颜色、感觉。',
-    story:'我告诉你今天发生的一件事。请根据你的性格回应，表达你的感受。',
+    photo:'我给你看一张今天拍的照片：'+((state.lastPhotoDesc)||'一张照片')+'。请根据你的性格描述你从照片里想象到的画面、颜色、感觉。',
+    story:'我跟你讲一件今天发生的事。请根据你的性格回应，表达你的感受。',
     food:'我告诉你今天吃了什么。请根据你的性格热情回应。',
     casual:'我回来看看你，随便聊聊。请根据你的性格自然回应。',
-    chat:'我正在跟你聊天。请根据你的性格继续对话。',
+    chat:'我正在跟你聊天。请根据我的语气自然回应。',
   };
 
   return await callZhipu(ZHIPU_CHAT_MODEL, [
     {role:'system', content: sys},
     {role:'user', content: actionMap[action] || actionMap.casual}
-  ], 0.85, 150);
+  ], 0.85, 200);
 }
 
 function getFallbackResp(a, action) {
