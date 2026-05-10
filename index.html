@@ -945,10 +945,10 @@ function selectPhoto() {
   // kept for compatibility
 }
 
-// ===== Gemini Vision =====
-let geminiKey = localStorage.getItem('gemini_key') || '';
-
-const GEMINI_MODEL = 'gemini-2.0-flash';
+// ===== 智谱 GLM-4V-Flash Vision =====
+let glmKey = localStorage.getItem('glm_key') || '';
+const GLM_MODEL = 'glm-4v-flash';
+const GLM_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 async function submitWishToAI() {
   if (!_wdImageData || !_wdAnimal) return;
@@ -956,15 +956,14 @@ async function submitWishToAI() {
   const loading = document.getElementById('wdLoading');
   const btn = document.getElementById('wdSubmitBtn');
 
-  // If no Gemini key, show setup prompt
-  if (!geminiKey) {
-    const key = prompt('🔑 需要 Google Gemini API Key（免费）才能让小动物识别照片。\n\n获取方式：\n1. 打开 https://aistudio.google.com/apikey\n2. 点击 Get API Key → 创建新密钥\n3. 复制粘贴到这里即可\n\n粘贴你的 Gemini API Key：');
+  // If no GLM key, prompt user
+  if (!glmKey) {
+    const key = prompt('🔑 需要智谱 GLM-4V 的 API Key（完全免费）让小动物识别照片。\n\n获取方式（1分钟）：\n1. 打开 https://open.bigmodel.cn/\n2. 注册/登录 → API Keys → 添加 API Key\n3. 复制粘贴到这里即可\n\n粘贴你的智谱 API Key：');
     if (key && key.trim()) {
-      geminiKey = key.trim();
-      localStorage.setItem('gemini_key', geminiKey);
+      glmKey = key.trim();
+      localStorage.setItem('glm_key', glmKey);
     } else {
-      // Fallback: complete without vision
-      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：虽然我看不到照片，但我能感觉到你拍了很棒的东西！谢谢你～⭐</div>';
+      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：虽然我看不到照片，但感受到你的心意了！谢谢你～⭐</div>';
       document.getElementById('wdCompleteBtn').style.display = '';
       btn.style.display = 'none';
       return;
@@ -976,38 +975,33 @@ async function submitWishToAI() {
   loading.innerHTML = '<div class="wd-loading">小动物正在仔细看你的照片…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
   feedback.innerHTML = '';
 
-  // Extract base64 data (remove data:image/...;base64, prefix)
-  const base64Data = _wdImageData.split(',')[1];
-  const mimeType = _wdImageData.split(';')[0].split(':')[1];
-
-  // Build Gemini request parts
-  const parts = [
-    {text: '你是一只'+_wdAnimal.emoji+' '+_wdAnimal.name+'，是社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到的画面、颜色、物体和你的感受。语气要像真实的小动物，2-3句话，自然口语化，只用中文回复。'},
-    {inlineData: {mimeType: mimeType, data: base64Data}}
-  ];
-
   try {
-    const resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+geminiKey,
-      {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          contents: [{role:'user', parts: parts}],
-          generationConfig: {temperature:0.9, maxOutputTokens:200}
-        })
-      }
-    );
+    const systemPrompt = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到了什么。2-3句话，自然口语化，只用中文。';
+
+    const resp = await fetch(GLM_URL, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+glmKey
+      },
+      body: JSON.stringify({
+        model: GLM_MODEL,
+        messages: [
+          {role:'system', content: systemPrompt},
+          {role:'user', content: [{type:'text',text:'看我拍了什么！'},{type:'image_url',image_url:{url:_wdImageData}}]}
+        ],
+        temperature: 0.9,
+        max_tokens: 200,
+      })
+    });
 
     if (!resp.ok) {
       const err = await resp.json().catch(()=>({}));
-      const msg = err.error?.message || 'HTTP '+resp.status;
-      throw new Error(msg);
+      throw new Error(err.error?.message || 'HTTP '+resp.status);
     }
 
     const data = await resp.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
+    const text = data.choices?.[0]?.message?.content || '';
     if (!text) throw new Error('Empty response');
 
     loading.innerHTML = '';
@@ -1017,17 +1011,16 @@ async function submitWishToAI() {
 
   } catch(e) {
     loading.innerHTML = '';
-    // If key is invalid, reset it
-    if (e.message.includes('API_KEY_INVALID') || e.message.includes('not found') || e.message.includes('PERMISSION_DENIED')) {
-      geminiKey = '';
-      localStorage.removeItem('gemini_key');
+    if (e.message.includes('Authentication') || e.message.includes('auth') || e.message.includes('API') || e.message.includes('401') || e.message.includes('403')) {
+      glmKey = '';
+      localStorage.removeItem('glm_key');
       feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 API Key 好像不对，刷新页面重新粘贴吧</div>';
     } else {
-      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 小动物有点眼花……不过还是很开心你拍了照片！<br><span style="font-size:10px;color:var(--text-light)">('+e.message.substring(0,50)+')</span></div>';
+      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 小动物有点眼花……不过还是很开心你拍了！<br><span style="font-size:10px;color:var(--text-light)">('+e.message.substring(0,50)+')</span></div>';
     }
     document.getElementById('wdCompleteBtn').style.display = '';
     btn.style.display = 'none';
-    console.warn('Gemini vision error:', e);
+    console.warn('GLM vision error:', e);
   }
 }
 
@@ -1151,7 +1144,7 @@ async function callDeepSeek(a, action) {
   };
   const msg = actionMap[action] || actionMap.casual;
 
-  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
     body: JSON.stringify({
