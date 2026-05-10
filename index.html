@@ -1005,14 +1005,39 @@ async function submitWishToAI() {
     loading.innerHTML = '';
 
     // Check if photo matches the wish
-    const isMatch = text.includes('【匹配】') || text.includes('[匹配]') || text.includes('【匹配】');
+    const isMatch = text.includes('【匹配】') || text.includes('[匹配]');
     const cleanText = text.replace(/【匹配】|【不匹配】|\[匹配\]|\[不匹配\]/g,'').trim();
 
-    // Store match status for completeWishDetail
     _wdIsMatch = isMatch;
 
     if (isMatch) {
       feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'</div>';
+      // Generate product image via CogView
+      loading.innerHTML = '<div class="wd-loading">'+_wdAnimal.emoji+' '+_wdAnimal.name+'正在用你的照片制作…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+      try {
+        const genPrompt = cleanText.replace(/['"【】]/g,'').substring(0,100);
+        const cogRes = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+ZHIPU_KEY},
+          body: JSON.stringify({
+            model:'cogview-3-plus',
+            prompt: '温暖治愈的手绘风格，柔和的水彩质感。一个小动物社区的场景，'+_wdAnimal.emoji+' '+_wdAnimal.name+'的'+_wdAnimal.role+'作品：'+genPrompt+ '。画面温馨可爱，柔光。',
+            size:'1024x1024',
+            n:1
+          })
+        });
+        if (cogRes.ok) {
+          const cogData = await cogRes.json();
+          const imgUrl = cogData.data?.[0]?.url;
+          if (imgUrl) {
+            loading.innerHTML = '';
+            feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🎨 '+_wdAnimal.name+'的成品</div><img src="'+imgUrl+'" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>';
+          }
+        }
+      } catch(cogErr) {
+        console.warn('CogView error:', cogErr);
+        loading.innerHTML = '';
+      }
     } else {
       feedback.innerHTML = '<div class="wd-feedback" style="background:#fff8f0;border-color:#e8d5b0">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'<br><span style="font-size:10px;color:var(--text-light)">（虽然不是最想要的，但你的心意收到了💕）</span></div>';
     }
