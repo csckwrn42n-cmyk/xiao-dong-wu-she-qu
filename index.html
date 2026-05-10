@@ -744,7 +744,7 @@ const allAnimalData = [...outdoorAnimals, ...indoorAnimals];
 // 智谱 API 配置
 const ZHIPU_KEY = '7f053966db3e49a7ab15a0eb7ae60492.ob7si5AaImMKdAUR';
 const ZHIPU_VISION_MODEL = 'glm-4v-flash';
-const ZHIPU_CHAT_MODEL = 'glm-4-flash';
+const ZHIPU_CHAT_MODEL = 'glm-4v-flash';  // 已验证可用的模型
 const ZHIPU_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 let state = {
@@ -1101,10 +1101,14 @@ async function handleResponse(action) {
   let resp;
   try {
     resp = await callZhipuChat(a, action);
+    console.log('AI chat ok:', resp.substring(0,40));
   } catch(e) {
-    console.warn('AI chat failed, using fallback:', e);
-    await new Promise(r => setTimeout(r, 400));
-    resp = getFallbackResp(a, action);
+    console.warn('AI chat failed:', e);
+    // Show error in dialogue so user can see what went wrong
+    showDialogueText('（小动物歪了歪头……' + e.message.substring(0,60) + '）\n' + getFallbackResp(a, action));
+    state.isAiProcessing = false;
+    setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
+    return;
   }
   showDialogueText(resp);
   state.isAiProcessing = false;
