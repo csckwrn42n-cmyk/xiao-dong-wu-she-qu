@@ -741,9 +741,15 @@ const indoorAnimals = [
 const allAnimalData = [...outdoorAnimals, ...indoorAnimals];
 
 // ==================== STATE ====================
+// 智谱 API 配置
+const ZHIPU_KEY = '7f053966db3e49a7ab15a0eb7ae60492.ob7si5AaImMKdAUR';
+const ZHIPU_VISION_MODEL = 'glm-4v-flash';
+const ZHIPU_CHAT_MODEL = 'glm-4-flash';
+const ZHIPU_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
 let state = {
   mode: 'outdoor',
-  apiKey: 'sk-1b56d194d50e47a4a08bc4db14fe0ee1',
+  apiKey: ZHIPU_KEY,
   stars: parseInt(localStorage.getItem('stars') || '0'),
   chain: parseInt(localStorage.getItem('chain') || '0'),
   wishes: outdoorAnimals.map(a => ({ id: a.id, done: false })),
@@ -945,30 +951,27 @@ function selectPhoto() {
   // kept for compatibility
 }
 
-// ===== 智谱 GLM-4V-Flash Vision =====
-let glmKey = localStorage.getItem('glm_key') || '';
-const GLM_MODEL = 'glm-4v-flash';
-const GLM_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+// ===== 智谱 API 通用调用 =====
+async function callZhipu(model, messages, temp=0.85, maxT=200) {
+  const res = await fetch(ZHIPU_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+ZHIPU_KEY},
+    body: JSON.stringify({model, messages, temperature:temp, max_tokens:maxT})
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(()=>'');
+    throw new Error('智谱 '+res.status+': '+err.substring(0,80));
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() || '';
+}
 
+// ===== Wish Vision =====
 async function submitWishToAI() {
   if (!_wdImageData || !_wdAnimal) return;
   const feedback = document.getElementById('wdFeedback');
   const loading = document.getElementById('wdLoading');
   const btn = document.getElementById('wdSubmitBtn');
-
-  // If no GLM key, prompt user
-  if (!glmKey) {
-    const key = prompt('🔑 需要智谱 GLM-4V 的 API Key（完全免费）让小动物识别照片。\n\n获取方式（1分钟）：\n1. 打开 https://open.bigmodel.cn/\n2. 注册/登录 → API Keys → 添加 API Key\n3. 复制粘贴到这里即可\n\n粘贴你的智谱 API Key：');
-    if (key && key.trim()) {
-      glmKey = key.trim();
-      localStorage.setItem('glm_key', glmKey);
-    } else {
-      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：虽然我看不到照片，但感受到你的心意了！谢谢你～⭐</div>';
-      document.getElementById('wdCompleteBtn').style.display = '';
-      btn.style.display = 'none';
-      return;
-    }
-  }
 
   btn.disabled = true;
   btn.textContent = '🔍 正在看…';
@@ -976,18 +979,15 @@ async function submitWishToAI() {
   feedback.innerHTML = '';
 
   try {
-    const systemPrompt = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到了什么。2-3句话，自然口语化，只用中文。';
+    const sys = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到了什么。2-3句话，自然口语化，只用中文。';
 
-    const resp = await fetch(GLM_URL, {
+    const res = await fetch(ZHIPU_URL, {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+glmKey
-      },
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+ZHIPU_KEY},
       body: JSON.stringify({
-        model: GLM_MODEL,
+        model: ZHIPU_VISION_MODEL,
         messages: [
-          {role:'system', content: systemPrompt},
+          {role:'system', content: sys},
           {role:'user', content: [{type:'text',text:'看我拍了什么！'},{type:'image_url',image_url:{url:_wdImageData}}]}
         ],
         temperature: 0.9,
@@ -995,14 +995,10 @@ async function submitWishToAI() {
       })
     });
 
-    if (!resp.ok) {
-      const err = await resp.json().catch(()=>({}));
-      throw new Error(err.error?.message || 'HTTP '+resp.status);
-    }
-
-    const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    if (!text) throw new Error('Empty response');
+    if (!res.ok) { const e=await res.text().catch(()=>''); throw new Error('HTTP'+res.status+': '+e.substring(0,80)); }
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content?.trim() || '';
+    if (!text) throw new Error('Empty');
 
     loading.innerHTML = '';
     feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+text+'</div>';
@@ -1011,16 +1007,10 @@ async function submitWishToAI() {
 
   } catch(e) {
     loading.innerHTML = '';
-    if (e.message.includes('Authentication') || e.message.includes('auth') || e.message.includes('API') || e.message.includes('401') || e.message.includes('403')) {
-      glmKey = '';
-      localStorage.removeItem('glm_key');
-      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 API Key 好像不对，刷新页面重新粘贴吧</div>';
-    } else {
-      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 小动物有点眼花……不过还是很开心你拍了！<br><span style="font-size:10px;color:var(--text-light)">('+e.message.substring(0,50)+')</span></div>';
-    }
+    feedback.innerHTML = '<div class="wd-feedback" style="background:#fff0f0;border-color:#e8c0c0">😅 小动物有点眼花……不过还是很开心你拍了！<br><span style="font-size:10px;color:var(--text-light)">('+e.message.substring(0,50)+')</span></div>';
     document.getElementById('wdCompleteBtn').style.display = '';
     btn.style.display = 'none';
-    console.warn('GLM vision error:', e);
+    console.warn('Vision error:', e);
   }
 }
 
@@ -1109,16 +1099,11 @@ async function handleResponse(action) {
   document.getElementById('dialogueText').classList.add('typing-cursor');
 
   let resp;
-  if (state.apiKey) {
-    try {
-      resp = await callDeepSeek(a, action);
-      console.log('AI response ok:', resp.substring(0,30));
-    } catch(e) {
-      console.warn('AI chat failed, using fallback:', e);
-      resp = getFallbackResp(a, action);
-    }
-  } else {
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+  try {
+    resp = await callZhipuChat(a, action);
+  } catch(e) {
+    console.warn('AI chat failed, using fallback:', e);
+    await new Promise(r => setTimeout(r, 400));
     resp = getFallbackResp(a, action);
   }
   showDialogueText(resp);
@@ -1126,11 +1111,11 @@ async function handleResponse(action) {
   setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
 }
 
-async function callDeepSeek(a, action) {
+async function callZhipuChat(a, action) {
   const systemPrompts = {
     melody:'你是Melody，一只金丝雀，社区里的流行歌手。元气、爱美、说话带感叹号，会用音乐比喻。回复2-3句话，自然口语化。',
     yanshu:'你是砚书，一只赤狐，社区里的小说家。细腻敏感，共情力强，说话温和有礼。会把日常变成故事。回复2-3句话。',
-    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃，话里经常带食物比喻，偶尔说嘿嘿。回复2-3句话。',
+    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃，话里经常带食物比喻。回复2-3句话。',
     adu:'你是阿渡，一只绿头鸭，在渡口开咖啡馆。沉默寡言但观察力极强，话少但说到点子上。回复1-2句即可。',
   };
   const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。回复2-3句话。';
@@ -1142,27 +1127,11 @@ async function callDeepSeek(a, action) {
     casual:'我回来看看你，随便聊聊。请根据你的性格自然回应。',
     chat:'我正在跟你聊天。请根据你的性格继续对话。',
   };
-  const msg = actionMap[action] || actionMap.casual;
 
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-    body: JSON.stringify({
-      model:'deepseek-chat',
-      messages:[
-        {role:'system',content:sys},
-        {role:'user',content:msg}
-      ],
-      temperature:0.85,
-      max_tokens:150,
-    })
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(()=>'');
-    throw new Error('API '+res.status+': '+errText);
-  }
-  const data = await res.json();
-  return data.choices[0].message.content.trim();
+  return await callZhipu(ZHIPU_CHAT_MODEL, [
+    {role:'system', content: sys},
+    {role:'user', content: actionMap[action] || actionMap.casual}
+  ], 0.85, 150);
 }
 
 function getFallbackResp(a, action) {
