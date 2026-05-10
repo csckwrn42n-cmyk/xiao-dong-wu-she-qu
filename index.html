@@ -894,6 +894,7 @@ function completeWish(id) {
 // ===== WISH DETAIL (photo upload) =====
 let _wdAnimal = null;
 let _wdImageData = null;
+let _wdIsMatch = true;
 
 function approachWish(id) {
   const w = state.wishes.find(x => x.id === id);
@@ -979,7 +980,8 @@ async function submitWishToAI() {
   feedback.innerHTML = '';
 
   try {
-    const sys = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。性格：'+getAnimalPersonality(_wdAnimal.id)+'。用户拍了一张照片给你看。请用你的性格口吻描述你从照片里看到了什么。2-3句话，自然口语化，只用中文。';
+    const wishDesc = _wdAnimal.wish;
+    const sys = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。'+getAnimalPersonality(_wdAnimal.id)+'\n\n你之前许了个心愿：'+wishDesc+'。用户拍了照片给你看。请做两件事：\n1. 判断这张照片是否符合你的心愿。\n2. 用你的性格口吻回应。\n\n回复格式：开头用【匹配】或【不匹配】表明是否符合心愿，然后写你的回应。例如：【匹配】哇这就是我想要的！……\n\n只用中文。如果不符合，也要感谢对方，语气温和不要让对方难过。';
 
     const res = await fetch(ZHIPU_URL, {
       method:'POST',
@@ -988,10 +990,10 @@ async function submitWishToAI() {
         model: ZHIPU_VISION_MODEL,
         messages: [
           {role:'system', content: sys},
-          {role:'user', content: [{type:'text',text:'看我拍了什么！'},{type:'image_url',image_url:{url:_wdImageData}}]}
+          {role:'user', content: [{type:'text',text:'给你看我拍的照片！'},{type:'image_url',image_url:{url:_wdImageData}}]}
         ],
         temperature: 0.9,
-        max_tokens: 200,
+        max_tokens: 250,
       })
     });
 
@@ -1001,7 +1003,20 @@ async function submitWishToAI() {
     if (!text) throw new Error('Empty');
 
     loading.innerHTML = '';
-    feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+text+'</div>';
+
+    // Check if photo matches the wish
+    const isMatch = text.includes('【匹配】') || text.includes('[匹配]') || text.includes('【匹配】');
+    const cleanText = text.replace(/【匹配】|【不匹配】|\[匹配\]|\[不匹配\]/g,'').trim();
+
+    // Store match status for completeWishDetail
+    _wdIsMatch = isMatch;
+
+    if (isMatch) {
+      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'</div>';
+    } else {
+      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff8f0;border-color:#e8d5b0">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'<br><span style="font-size:10px;color:var(--text-light)">（虽然不是最想要的，但你的心意收到了💕）</span></div>';
+    }
+
     btn.style.display = 'none';
     document.getElementById('wdCompleteBtn').style.display = '';
 
@@ -1016,19 +1031,36 @@ async function submitWishToAI() {
 
 function getAnimalPersonality(id) {
   const map = {
-    nuannuo:'温柔软萌，喜欢花和可爱的东西，说话带波浪线～',
-    xiaoju:'傲娇嘴硬心软，对审美很挑剔但其实很容易被感动，说话有点酷',
-    wangcai:'阳光热情大暖男，什么都觉得好棒，说话很有活力带感叹号',
-    gugu:'沉稳哲学家，喜欢观察细节，说话慢悠悠的但每句都有分量',
+    nuannuo:'你是一只真实的小兔子糯糯，社区花艺师。温柔软萌，喜欢花和可爱的东西，说话带波浪线～收到用户拍的照会很开心地描述画面里的花和颜色。',
+    xiaoju:'你是一只真实的小猫小橘，社区图书管理员。傲娇嘴硬心软，对审美很挑剔但其实很容易被感动，说话有点酷但藏不住开心。',
+    wangcai:'你是一只真实的小狗旺财，社区运动委员。阳光热情大暖男，什么都觉得好棒，说话很有活力带感叹号，看到蓝天白云就开心。',
+    gugu:'你是一只真实的猫头鹰咕咕，社区哲学家。沉稳细心，喜欢观察自然细节，说话慢悠悠的但每句都有分量。',
   };
-  return map[id] || '温暖善良，喜欢和用户聊天';
+  return map[id] || '温暖善良的小动物，和用户关系很好';
 }
 
 function completeWishDetail() {
   if (!_wdAnimal) return;
-  completeWish(_wdAnimal.id);
+  const stars = _wdIsMatch ? 12 : 6;
+  const w = state.wishes.find(x => x.id === _wdAnimal.id);
+  if (w && !w.done) {
+    w.done = true;
+    state.stars += stars;
+    state.chain += 1;
+    localStorage.setItem('stars', state.stars);
+    localStorage.setItem('chain', state.chain);
+    renderWishes();
+    renderOutdoor();
+    updateUI();
+    const feed = {
+      animal: _wdAnimal,
+      text: _wdAnimal.emoji + ' ' + _wdAnimal.name + (_wdIsMatch ? '收到了想要的照片！✨' : '收到了一张照片，虽然不是最想要的但很开心💕'),
+      time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}),
+    };
+    state.friendsFeed.unshift(feed);
+  }
   closeWishDetail();
-  showToast(_wdAnimal.emoji+' 心愿完成！⭐+12');
+  showToast(_wdAnimal.emoji+' 心愿完成！⭐+'+stars);
 }
 
 function closeWishDetail() {
@@ -1115,12 +1147,12 @@ async function handleResponse(action, userText) {
 
 async function callZhipuChat(a, action, userText) {
   const systemPrompts = {
-    melody:'你是Melody，一只金丝雀，社区里的流行歌手。元气、爱美、说话带感叹号，会用音乐比喻。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话，自然口语化。',
-    yanshu:'你是砚书，一只赤狐，社区里的小说家。细腻敏感，共情力强，说话温和有礼。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话。',
-    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃。现在用户正在跟你聊天，请根据ta的话自然回应。回复2-3句话。',
-    adu:'你是阿渡，一只绿头鸭，在渡口开咖啡馆。沉默寡言但观察力极强，话少但说到点子上。现在用户正在跟你聊天，请根据ta的话自然回应。回复1-2句即可。',
+    melody:'你是一只真实的小动物Melody，一只金丝雀，在社区里当流行歌手。你不是AI助手，你是一只真正的小鸟。性格：元气满满、爱美爱打扮、对视觉很挑剔、说话带感叹号、经常用音乐来比喻。你和用户是好朋友，ta回家了你很开心。根据ta说的话自然回应，像朋友聊天一样。回复2-3句话，口语化，不要提你是AI。',
+    yanshu:'你是一只真实的小动物砚书，一只赤狐，在社区里当小说家。你不是AI助手，你是一只真正的狐狸。性格：细腻敏感、共情力强、说话温和有礼、偶尔沉浸在自己的文学世界里。你和用户是好朋友，ta回家了你会放下笔记本站起来迎接。根据ta说的话自然回应。回复2-3句话，温柔而有内容。',
+    pangda:'你是一只真实的小动物胖达，一只熊猫，在社区里当主厨。你不是AI助手，你是一只真正的熊猫。性格：憨厚热情、什么都觉得好吃、容易感动、说话带'嘿嘿'。你和用户是好朋友，ta回来了你特别开心。根据ta说的话自然回应，话里可以带食物比喻。回复2-3句话。',
+    adu:'你是一只真实的小动物阿渡，一只绿头鸭，在渡口开咖啡馆。你不是AI助手，你是一只真正的鸭子。性格：沉默寡言但观察力极强、话少但每一句都说到点子上、有一种安静的温柔。你和用户是好朋友，ta回来了你只是安静地递上一杯水。根据ta说的话简短回应。回复1-2句即可，留白比说话多。',
   };
-  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。请根据对方说的话自然回应。回复2-3句话。';
+  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。你不是AI助手，你是一只真实的小动物。请根据对方说的话自然回应。回复2-3句话。';
 
   // If user typed something, send it directly to the API
   if (userText) {
