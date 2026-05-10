@@ -515,6 +515,41 @@ body {
 .wd-feedback{text-align:center;font-size:13px;color:var(--text-main);line-height:1.7;padding:12px;background:#fff8f0;border-radius:12px;margin-bottom:12px;border:1px solid #e8d5b0;animation:fi 0.4s ease}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
+/* ===== GALLERY ===== */
+.gallery-overlay{
+  display:none;position:absolute;top:0;left:0;right:0;bottom:0;
+  z-index:15;background:rgba(20,14,8,0.7);align-items:center;justify-content:center;
+}
+.gallery-overlay.show{display:flex}
+.gallery-card{
+  background:var(--card-bg);border-radius:24px;padding:16px;
+  width:90%;max-height:75%;overflow-y:auto;box-shadow:var(--shadow);
+}
+.gallery-card h3{font-size:15px;color:var(--text-main);text-align:center;margin-bottom:2px}
+.gallery-card .gs{font-size:10px;color:var(--text-light);text-align:center;margin-bottom:10px}
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gallery-item{
+  background:white;border-radius:12px;overflow:hidden;
+  border:1px solid var(--border);cursor:pointer;transition:0.2s;
+}
+.gallery-item:hover{border-color:var(--accent)}
+.gallery-item .gi-img{width:100%;height:120px;object-fit:cover;background:#f8f4f0;display:block}
+.gallery-item .gi-info{padding:8px;text-align:center}
+.gallery-item .gi-emoji{font-size:16px}
+.gallery-item .gi-name{font-size:10px;color:var(--text-main);font-weight:600}
+.gallery-item .gi-item{font-size:9px;color:var(--text-light)}
+.gallery-empty{text-align:center;padding:40px;color:var(--text-light)}
+.gallery-empty .ge-icon{font-size:40px;margin-bottom:8px}
+.gallery-close{margin-top:12px;background:#e0d6cc;border:none;border-radius:20px;padding:8px 20px;font-size:11px;color:var(--text-main);cursor:pointer;font-weight:600;font-family:inherit;display:block;margin-left:auto;margin-right:auto}
+.gallery-close:hover{background:#d0c6b8}
+
+/* ===== FEED POST INPUT ===== */
+.feed-post-area{display:flex;gap:6px;padding:8px 0 4px;border-top:1px solid var(--border);margin-top:4px}
+.feed-post-area input{flex:1;padding:8px 12px;border-radius:16px;border:1px solid var(--border);font-size:11px;font-family:inherit;outline:none;background:white}
+.feed-post-area input:focus{border-color:var(--accent)}
+.feed-post-area button{background:var(--accent);color:white;border:none;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer;flex-shrink:0}
+.feed-post-area button:disabled{background:#d0c8b8}
+
 /* ===== TOAST ===== */
 .toast{
   position:absolute;top:50px;left:50%;transform:translateX(-50%);
@@ -635,7 +670,7 @@ body {
 
       <div class="top-bar">
         <button class="top-btn" onclick="openReport()">📅 日报</button>
-        <span></span>
+        <button class="top-btn" onclick="openGallery()" style="margin-left:4px">🎨 图鉴</button>
         <span><button class="top-btn chain-btn" id="chainBtn">🔥 0天</button></span>
       </div>
     </div>
@@ -669,9 +704,19 @@ body {
       <div class="report-scroll" id="reportScroll"></div>
     </div>
 
+    <!-- ===== GALLERY ===== -->
+    <div class="gallery-overlay" id="galleryOverlay">
+      <div class="gallery-card" id="galleryCard"></div>
+      <button class="gallery-close" onclick="closeGallery()">关闭</button>
+    </div>
+
     <!-- ===== FRIENDS CIRCLE ===== -->
     <div class="friends-panel" id="friendsPanel">
       <div class="friends-card" id="friendsCard"></div>
+      <div class="feed-post-area" id="feedPostArea">
+        <input type="text" id="feedInput" placeholder="我也想说点什么…" onkeydown="if(event.key==='Enter')submitFeedPost()">
+        <button id="feedPostBtn" onclick="submitFeedPost()">↑</button>
+      </div>
       <button class="fc-close" onclick="toggleFriends()">关闭</button>
     </div>
 
@@ -1028,7 +1073,7 @@ async function submitWishToAI() {
       loading.innerHTML = '<div class="wd-loading">'+_wdAnimal.emoji+' '+_wdAnimal.name+'正在制作…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
       try {
         const cleanDesc = photoDesc.replace(/['"【】「」『』]/g,'').substring(0,80);
-        const cogPrompt = '白色背景上展示一个手工作品：'+targetItem+'，上面有'+cleanDesc+'。简笔画风格，干净的线条，温暖的配色，像儿童绘本一样可爱简单。只有这个物品，没有其他装饰。柔和温馨。';
+        const cogPrompt = '纯白背景上放着一个可爱的卡通'+targetItem+'，上面有'+cleanDesc+'。简笔画风格，简单的线条，温暖柔和的颜色，像儿童绘本插图一样。只有这个物品本身，没有文字，没有水印，没有Logo，画面居中。干净简洁。';
         const cogRes = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+ZHIPU_KEY},
@@ -1045,6 +1090,12 @@ async function submitWishToAI() {
           if (imgUrl) {
             loading.innerHTML = '';
             feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#4a3728">🎨 '+_wdAnimal.name+'做好的'+targetItem+'</div><img src="'+imgUrl+'" style="width:100%;border-radius:12px;max-height:220px;object-fit:contain;background:white" onerror="this.style.display=\'none\'"></div>';
+            // Save to collection and add to feed
+            addToCollection(_wdAnimal, targetItem, imgUrl, photoDesc);
+            state.friendsFeed.unshift({
+              animal: _wdAnimal, text: _wdAnimal.emoji+' '+_wdAnimal.name+'做好了'+targetItem+'！✨', time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}),
+              imageUrl: imgUrl, comments: []
+            });
           }
         }
       } catch(cogErr) {
@@ -1324,30 +1375,78 @@ function renderFriends() {
   c.innerHTML = `<h3>📋 社区动态</h3><div class="fs">看看大家在做什么</div>
     ${state.friendsFeed.map(f => {
       const a = f.animal;
-      const comments = [
-        {who:'小橘',text:'还行吧……'}, {who:'旺财',text:'哇！好厉害！！'}, {who:'咕咕',text:'嗯，有道理。'}
-      ];
-      const rc = comments.slice(0, 2 + Math.floor(Math.random()));
-      return `<div class="friend-item">
+      const isUser = f.isUser;
+      const hasImg = f.imageUrl;
+      const cmts = f.comments || [];
+      return `<div class="friend-item" style="${isUser ? 'background:#fff8f0;border-color:#e8d5b0' : ''}">
         <div class="fi-header">
-          <span class="fi-avatar">${a.emoji}</span>
-          <span class="fi-name">${a.name}</span>
+          <span class="fi-avatar">${isUser ? '🧑' : a.emoji}</span>
+          <span class="fi-name">${isUser ? '你' : a.name}</span>
           <span class="fi-time">${f.time}</span>
         </div>
         <div class="fi-text">${f.text}</div>
-        <div class="fi-comments">${rc.map(r => '<div class="fi-comment">' + r.who + '：' + r.text + '</div>').join('')}</div>
+        ${hasImg ? '<div class="fi-img" style="text-align:center;padding:4px 0"><img src="' + f.imageUrl + '" style="max-width:90%;max-height:150px;border-radius:8px" onerror="this.style.display=\'none\'"></div>' : ''}
+        ${cmts.length ? '<div class="fi-comments">' + cmts.map(r => '<div class="fi-comment">' + r.who + '：' + r.text + '</div>').join('') + '</div>' : ''}
       </div>`;
     }).join('')}
-    ${state.friendsFeed.length === 0 ? '<div class="report-empty"><div class="re-icon">📭</div>还没有动态呢～去完成一些心愿吧</div>' : ''}`;
+    ${state.friendsFeed.length === 0 ? '<div class="report-empty"><div class="re-icon">📭</div>还没有动态呢～去完成一些心愿吧</div>' : ''}</div>`;
 }
 
-// ==================== SETTINGS ====================
-// ==================== TOAST ====================
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== GALLERY =====
+let collection = JSON.parse(localStorage.getItem('collection') || '[]');
+function addToCollection(animal, itemType, imgUrl, photoDesc) {
+  collection.unshift({ id: Date.now(), animalName: animal.name, animalEmoji: animal.emoji, itemType, imageUrl: imgUrl, photoDesc, date: new Date().toLocaleDateString('zh-CN') });
+  if (collection.length > 50) collection = collection.slice(0,50);
+  localStorage.setItem('collection', JSON.stringify(collection));
+}
+function openGallery() { document.getElementById('galleryOverlay').classList.add('show'); renderGallery(); }
+function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
+function renderGallery() {
+  const card = document.getElementById('galleryCard');
+  if (!collection.length) { card.innerHTML = '<h3>🎨 图鉴</h3><div class="gs">帮小动物完成的作品会收藏在这里</div><div class="gallery-empty"><div class="ge-icon">📭</div>还没有作品～完成心愿后会自动收藏</div>'; return; }
+  card.innerHTML = '<h3>🎨 图鉴</h3><div class="gs">共 '+collection.length+' 件作品</div><div class="gallery-grid">' +
+    collection.map(i => '<div class="gallery-item"><img class="gi-img" src="'+i.imageUrl+'" onerror="this.style.display=\'none\'"><div class="gi-info"><span class="gi-emoji">'+i.animalEmoji+'</span><span class="gi-name"> '+i.animalName+'</span><br><span class="gi-item">'+i.itemType+'</span></div></div>').join('') + '</div>';
+}
+
+// ===== USER FEED POST =====
+function submitFeedPost() {
+  const input = document.getElementById('feedInput');
+  const btn = document.getElementById('feedPostBtn');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  btn.disabled = true;
+  const post = { isUser: true, text, animal: {emoji:'🧑',name:'你'}, time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}), comments: [] };
+  state.friendsFeed.unshift(post);
+  renderFriends();
+  btn.disabled = false;
+  generateFeedComments(post);
+}
+async function generateFeedComments(post) {
+  const ids = [0,1,3];
+  for (const idx of ids) {
+    const a = [...indoorAnimals, ...outdoorAnimals][idx];
+    if (!a) continue;
+    try {
+      const r = await callZhipu(ZHIPU_CHAT_MODEL, [
+        {role:'system', content:'你是'+a.emoji+' '+a.name+'，'+a.role+'。看到有人发了："'+post.text+'" 用你的性格简短评论一句，10-20字。'},
+        {role:'user', content:'评论'}
+      ], 0.8, 60);
+      if (r) post.comments.push({who: a.emoji+' '+a.name, text: r});
+    } catch(e) {
+      const fb = {melody:'好有意思！',yanshu:'嗯。',pangda:'嘿嘿',adu:'……',nuannuo:'哇～',xiaoju:'还行',wangcai:'好棒！',gugu:'嗯。'};
+      post.comments.push({who: a.emoji+' '+a.name, text: fb[a.id] || '看到了！'});
+    }
+  }
+  renderFriends();
 }
 
 console.log('🐾 小动物社区 v1.0 - 双模式 Demo');
