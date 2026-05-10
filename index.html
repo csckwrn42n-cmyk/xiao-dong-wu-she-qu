@@ -13,7 +13,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 
 :root {
-  --bg: #2a2218;
   --phone-bg: #1a1410;
   --text-main: #4a3728;
   --text-sub: #8a7a6a;
@@ -27,31 +26,30 @@
 
 body {
   font-family: 'Noto Serif SC','PingFang SC',serif;
-  background: var(--bg);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.phone {
-  width: 400px; height: 860px;
   background: var(--phone-bg);
-  border-radius: 40px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.4), 0 0 0 3px #3a2a1a;
-  overflow: hidden;
-  position: relative;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+.phone {
+  flex: 1;
+  background: var(--phone-bg);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .status-bar {
-  padding: 14px 28px 8px;
+  padding: env(safe-area-inset-top, 8px) 20px 6px;
+  padding-top: max(env(safe-area-inset-top, 8px), 8px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-light);
   font-weight: 600;
   flex-shrink: 0;
@@ -336,7 +334,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 12px;
+  padding: 0 12px env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
   z-index: 10;
 }
 .bottom-btn {
