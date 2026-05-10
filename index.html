@@ -455,25 +455,6 @@ body {
 .report-empty{text-align:center;padding:40px 20px;color:var(--text-light)}
 .report-empty .re-icon{font-size:40px;margin-bottom:10px}
 
-/* ===== SETTINGS ===== */
-.settings-overlay{
-  display:none;position:absolute;top:0;left:0;right:0;bottom:0;
-  z-index:30;background:rgba(20,14,8,0.6);align-items:center;justify-content:center;
-}
-.settings-overlay.show{display:flex}
-.settings-card{background:var(--card-bg);border-radius:24px;padding:20px;width:85%;box-shadow:var(--shadow)}
-.settings-card h3{font-size:15px;color:var(--text-main);margin-bottom:12px;text-align:center}
-.settings-card label{font-size:11px;color:var(--text-sub);display:block;margin-bottom:3px}
-.settings-card input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:12px;font-family:inherit;margin-bottom:10px;outline:none}
-.settings-card input:focus{border-color:var(--accent)}
-.settings-hint{font-size:10px;color:var(--text-light);margin-bottom:12px;line-height:1.5}
-.settings-btns{display:flex;gap:6px}
-.settings-btns button{flex:1;padding:8px;border-radius:12px;border:none;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit}
-.settings-btns .btn-save{background:var(--accent);color:white}
-.settings-btns .btn-save:hover{background:var(--accent-hover)}
-.settings-btns .btn-cancel{background:#e0d6cc;color:var(--text-main)}
-.settings-btns .btn-cancel:hover{background:#d0c6b8}
-
 /* ===== TOAST ===== */
 .toast{
   position:absolute;top:50px;left:50%;transform:translateX(-50%);
@@ -634,21 +615,7 @@ body {
       <button class="fc-close" onclick="toggleFriends()">关闭</button>
     </div>
 
-    <!-- ===== SETTINGS ===== -->
-    <div class="settings-overlay" id="settingsOverlay">
-      <div class="settings-card">
-        <h3>⚙️ 设置</h3>
-        <label>DeepSeek API Key（可选）</label>
-        <input type="password" id="apiKeyInput" placeholder="sk-...">
-        <div class="settings-hint">AI 对话模式需要 Key 才能生效。不填则使用预设对话。</div>
-        <div class="settings-btns">
-          <button class="btn-cancel" onclick="closeSettings()">取消</button>
-          <button class="btn-save" onclick="saveApiKey()">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast -->
+<!-- Toast -->
     <div class="toast" id="toast"></div>
   </div>
 
@@ -658,7 +625,7 @@ body {
     <button class="bottom-btn mode-switch" id="modeBtn" onclick="switchMode()">
       <span id="modeIcon">🌿</span><span id="modeLabel">外出</span>
     </button>
-    <button class="bottom-btn" onclick="openSettings()"><span class="bb-icon">⚙️</span><span>设置</span></button>
+
   </div>
 </div>
 
@@ -682,8 +649,8 @@ const allAnimalData = [...outdoorAnimals, ...indoorAnimals];
 
 // ==================== STATE ====================
 let state = {
-  mode: 'outdoor', // 'outdoor' | 'indoor'
-  apiKey: localStorage.getItem('ds_api_key') || '',
+  mode: 'outdoor',
+  apiKey: 'sk-1b56d194d50e47a4a08bc4db14fe0ee1',
   stars: parseInt(localStorage.getItem('stars') || '0'),
   chain: parseInt(localStorage.getItem('chain') || '0'),
   wishes: outdoorAnimals.map(a => ({ id: a.id, done: false })),
@@ -696,12 +663,9 @@ let state = {
 
 // ==================== INIT ====================
 function init() {
-  document.getElementById('apiKeyInput').value = state.apiKey;
-  updateTime();
   renderOutdoor();
   renderIndoor();
   updateUI();
-  setInterval(updateTime, 30000);
   generateInitialFeed();
 }
 init();
@@ -897,8 +861,12 @@ async function handleResponse(action) {
 
   let resp;
   if (state.apiKey) {
-    // TODO: DeepSeek API integration
-    resp = getFallbackResp(a, action);
+    try {
+      resp = await callDeepSeek(a, action);
+    } catch(e) {
+      console.warn('AI API failed, using fallback:', e);
+      resp = getFallbackResp(a, action);
+    }
   } else {
     await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
     resp = getFallbackResp(a, action);
@@ -906,6 +874,42 @@ async function handleResponse(action) {
   showDialogueText(resp);
   state.isAiProcessing = false;
   setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
+}
+
+async function callDeepSeek(a, action) {
+  const systemPrompts = {
+    melody:'你是Melody，一只金丝雀，社区里的流行歌手。元气、爱美、说话带感叹号，会用音乐比喻。回复2-3句话，自然口语化。',
+    yanshu:'你是砚书，一只赤狐，社区里的小说家。细腻敏感，共情力强，说话温和有礼。会把日常变成故事。回复2-3句话。',
+    pangda:'你是胖达，一只熊猫，社区主厨。憨厚热情，什么都觉得好吃，话里经常带食物比喻，偶尔说嘿嘿。回复2-3句话。',
+    adu:'你是阿渡，一只绿头鸭，在渡口开咖啡馆。沉默寡言但观察力极强，话少但说到点子上。回复1-2句即可。',
+  };
+  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。回复2-3句话。';
+
+  const actionMap = {
+    photo:'我给你看一张今天拍的照片。请根据你的性格描述你从照片里想象到的画面、颜色、感觉。',
+    story:'我告诉你今天发生的一件事。请根据你的性格回应，表达你的感受。',
+    food:'我告诉你今天吃了什么。请根据你的性格热情回应。',
+    casual:'我回来看看你，随便聊聊。请根据你的性格自然回应。',
+    chat:'我正在跟你聊天。请根据你的性格继续对话。',
+  };
+  const msg = actionMap[action] || actionMap.casual;
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
+    body: JSON.stringify({
+      model:'deepseek-chat',
+      messages:[
+        {role:'system',content:sys},
+        {role:'user',content:msg}
+      ],
+      temperature:0.85,
+      max_tokens:150,
+    })
+  });
+  if (!res.ok) throw new Error('API error: '+res.status);
+  const data = await res.json();
+  return data.choices[0].message.content.trim();
 }
 
 function getFallbackResp(a, action) {
@@ -1035,25 +1039,6 @@ function renderFriends() {
 }
 
 // ==================== SETTINGS ====================
-function openSettings() {
-  document.getElementById('settingsOverlay').classList.add('show');
-}
-function closeSettings() {
-  document.getElementById('settingsOverlay').classList.remove('show');
-}
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (key) {
-    state.apiKey = key;
-    localStorage.setItem('ds_api_key', key);
-  } else {
-    state.apiKey = '';
-    localStorage.removeItem('ds_api_key');
-  }
-  closeSettings();
-  showToast('设置已保存 ✓');
-}
-
 // ==================== TOAST ====================
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1061,15 +1046,6 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
-
-// ==================== RESET (dev) ====================
-// Reset on double-click mode button
-document.getElementById('modeBtn').addEventListener('dblclick', () => {
-  if (confirm('重置所有数据？')) {
-    localStorage.clear();
-    location.reload();
-  }
-});
 
 console.log('🐾 小动物社区 v1.0 - 双模式 Demo');
 console.log('🌿 外出模式：点击小动物完成心愿');
