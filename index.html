@@ -981,7 +981,17 @@ async function submitWishToAI() {
 
   try {
     const wishDesc = _wdAnimal.wish;
-    const sys = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。'+getAnimalPersonality(_wdAnimal.id)+'\n\n你之前许了个心愿：'+wishDesc+'。用户拍了照片给你看。请做两件事：\n1. 判断这张照片是否符合你的心愿。\n2. 用你的性格口吻回应。\n\n回复格式：开头用【匹配】或【不匹配】表明是否符合心愿，然后写你的回应。例如：【匹配】哇这就是我想要的！……\n\n只用中文。如果不符合，也要感谢对方，语气温和不要让对方难过。';
+    // Extract the actual item from the wish
+    let targetItem = '小作品';
+    if (wishDesc.includes('书签')) targetItem = '书签';
+    else if (wishDesc.includes('明信片')) targetItem = '明信片';
+    else if (wishDesc.includes('标本') || wishDesc.includes('干花')) targetItem = '花标本';
+    else if (wishDesc.includes('画')) targetItem = '画';
+    else if (wishDesc.includes('装饰')) targetItem = '装饰品';
+    else if (wishDesc.includes('卡片')) targetItem = '卡片';
+    else if (wishDesc.includes('挂件')) targetItem = '小挂件';
+
+    const sys = '你是'+_wdAnimal.emoji+' '+_wdAnimal.name+'，社区里的'+_wdAnimal.role+'。'+getAnimalPersonality(_wdAnimal.id)+'\n\n你之前许了个心愿：'+wishDesc+'。用户拍了照片给你看。请完成以下三件事，严格按照格式输出：\n\n第一行：【匹配】或【不匹配】（判断照片是否符合你的心愿）\n第二行：用一句简短的话描述照片里有什么（颜色、形状、物体）\n第三行开始：用你的性格口吻回应用户，2句话\n\n示例：\n【匹配】\n照片里有一朵粉色的玫瑰花，花瓣上还有水珠\n哇！这就是我想要的！好漂亮的颜色，我做书签的灵感来了！谢谢你～\n\n只用中文。如果不符合心愿，也要温柔回应。';
 
     const res = await fetch(ZHIPU_URL, {
       method:'POST',
@@ -992,8 +1002,8 @@ async function submitWishToAI() {
           {role:'system', content: sys},
           {role:'user', content: [{type:'text',text:'给你看我拍的照片！'},{type:'image_url',image_url:{url:_wdImageData}}]}
         ],
-        temperature: 0.9,
-        max_tokens: 250,
+        temperature: 0.8,
+        max_tokens: 300,
       })
     });
 
@@ -1004,24 +1014,27 @@ async function submitWishToAI() {
 
     loading.innerHTML = '';
 
-    // Check if photo matches the wish
-    const isMatch = text.includes('【匹配】') || text.includes('[匹配]');
-    const cleanText = text.replace(/【匹配】|【不匹配】|\[匹配\]|\[不匹配\]/g,'').trim();
+    // Parse response: first line = match status, second line = photo description, rest = animal response
+    const lines = text.split('\n').filter(l => l.trim());
+    const isMatch = lines[0]?.includes('匹配') || false;
+    const photoDesc = lines[1] || '';
+    const animalReply = lines.slice(2).join('\n').trim() || lines[0]?.replace(/【匹配】|【不匹配】/g,'') || '';
 
     _wdIsMatch = isMatch;
 
     if (isMatch) {
-      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'</div>';
+      feedback.innerHTML = '<div class="wd-feedback">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+animalReply+'</div>';
       // Generate product image via CogView
-      loading.innerHTML = '<div class="wd-loading">'+_wdAnimal.emoji+' '+_wdAnimal.name+'正在用你的照片制作…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+      loading.innerHTML = '<div class="wd-loading">'+_wdAnimal.emoji+' '+_wdAnimal.name+'正在制作…<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
       try {
-        const genPrompt = cleanText.replace(/['"【】]/g,'').substring(0,100);
+        const cleanDesc = photoDesc.replace(/['"【】「」『』]/g,'').substring(0,80);
+        const cogPrompt = '白色背景上展示一个手工作品：'+targetItem+'，上面有'+cleanDesc+'。简笔画风格，干净的线条，温暖的配色，像儿童绘本一样可爱简单。只有这个物品，没有其他装饰。柔和温馨。';
         const cogRes = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+ZHIPU_KEY},
           body: JSON.stringify({
             model:'cogview-3-plus',
-            prompt: '温暖治愈的手绘风格，柔和的水彩质感。一个小动物社区的场景，'+_wdAnimal.emoji+' '+_wdAnimal.name+'的'+_wdAnimal.role+'作品：'+genPrompt+ '。画面温馨可爱，柔光。',
+            prompt: cogPrompt,
             size:'1024x1024',
             n:1
           })
@@ -1031,7 +1044,7 @@ async function submitWishToAI() {
           const imgUrl = cogData.data?.[0]?.url;
           if (imgUrl) {
             loading.innerHTML = '';
-            feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🎨 '+_wdAnimal.name+'的成品</div><img src="'+imgUrl+'" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>';
+            feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#4a3728">🎨 '+_wdAnimal.name+'做好的'+targetItem+'</div><img src="'+imgUrl+'" style="width:100%;border-radius:12px;max-height:220px;object-fit:contain;background:white" onerror="this.style.display=\'none\'"></div>';
           }
         }
       } catch(cogErr) {
@@ -1039,7 +1052,7 @@ async function submitWishToAI() {
         loading.innerHTML = '';
       }
     } else {
-      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff8f0;border-color:#e8d5b0">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+cleanText+'<br><span style="font-size:10px;color:var(--text-light)">（虽然不是最想要的，但你的心意收到了💕）</span></div>';
+      feedback.innerHTML = '<div class="wd-feedback" style="background:#fff8f0;border-color:#e8d5b0">'+_wdAnimal.emoji+' '+_wdAnimal.name+'：'+animalReply+'<br><span style="font-size:10px;color:var(--text-light)">（虽然不是最想要的，但你的心意收到了💕）</span></div>';
     }
 
     btn.style.display = 'none';
