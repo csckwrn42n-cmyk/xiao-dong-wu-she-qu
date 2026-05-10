@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>小动物万事屋 🐾</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+  background: #e8e0d8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* ===== Phone Frame ===== */
+.phone {
+  width: 400px;
+  height: 860px;
+  background: #fffaf5;
+  border-radius: 40px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.15), 0 0 0 3px #3a2a1a;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Status Bar ===== */
+.status-bar {
+  padding: 14px 28px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #4a3728;
+  font-weight: 600;
+}
+
+/* ===== Walking Chain Banner ===== */
+.chain-banner {
+  margin: 0 20px 8px;
+  padding: 11px 16px;
+  background: linear-gradient(135deg, #fce4ec, #fff3e0, #e8f5e9, #ede7f6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.chain-banner:hover { transform: scale(1.02); }
+.chain-banner .chain-left { display: flex; align-items: center; gap: 10px; }
+.chain-banner .chain-icon { font-size: 24px; }
+.chain-banner .chain-info { line-height: 1.3; }
+.chain-banner .chain-day { font-size: 13px; font-weight: 700; color: #4a3728; }
+.chain-banner .chain-sub { font-size: 11px; color: #8a7a6a; }
+.chain-banner .chain-streak {
+  background: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d4924a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ===== Header ===== */
+.header {
+  padding: 6px 24px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header h1 { font-size: 21px; font-weight: 800; color: #4a3728; letter-spacing: 0.5px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.coin-badge {
+  background: #fff3e0;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #d4924a;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid #ffe0b2;
+  transition: 0.2s;
+}
+.coin-badge:hover { background: #ffe0b2; }
+
+/* ===== Main Content ===== */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 8px;
+  scroll-behavior: smooth;
+}
+.content::-webkit-scrollbar { width: 3px; }
+.content::-webkit-scrollbar-thumb { background: #e0d6cc; border-radius: 3px; }
+
+/* ===== Sections ===== */
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a7a6a;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== Animal Grid ===== */
+.animal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.animal-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 12px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+  border: 1px solid #f0e8e0;
+  position: relative;
+}
+.animal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.animal-card:active { transform: scale(0.97); }
+.animal-card .avatar {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 8px;
+  font-size: 30px;
+  transition: 0.3s;
+}
+.animal-card .name { font-size: 14px; font-weight: 700; color: #4a3728; }
+.animal-card .personality { font-size: 11px; color: #b8a89a; margin-top: 2px; }
+.animal-card .mood-badge { font-size: 22px; margin-top: 4px; display: block; }
+.animal-card .pending-dot {
+  position: absolute;
+  top: 10px; right: 12px;
+  width: 8px; height: 8px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255,107,107,0.2);
+}
+
+/* ===== Moments Feed ===== */
+.moments-feed { display: flex; flex-direction: column; gap: 10px; }
+.moment-card {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  border: 1px solid #f0e8e0;
+}
+.moment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.moment-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.moment-author { font-size: 13px; font-weight: 700; color: #4a3728; }
+.moment-time { font-size: 11px; color: #b8a89a; }
+.moment-body { font-size: 13px; color: #4a3728; line-height: 1.6; margin-bottom: 10px; }
+.moment-image {
+  width: 100%; height: 180px;
+  background: #f5ede6;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+.moment-actions {
+  display: flex; gap: 20px;
+  font-size: 12px; color: #b8a89a;
+}
+.moment-comments {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f5ede6;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.moment-comment { font-size: 12px; color: #6a5a4a; }
+.moment-comment strong { color: #4a3728; }
+
+/* ===== Wish List ===== */
+.quest-list { display: flex; flex-direction: column; gap: 8px; }
+.quest-card {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid #f0e8e0;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quest-card:hover { border-color: #d4924a; box-shadow: 0 2px 8px rgba(212,146,74,0.1); }
+.quest-card:active { transform: scale(0.98); }
+.quest-card .q-emoji { font-size: 28px; flex-shrink: 0; }
+.quest-card .q-body { flex: 1; }
+.quest-card .q-title { font-size: 13px; font-weight: 700; color: #4a3728; }
+.quest-card .q-desc { font-size: 11px; color: #8a7a6a; margin-top: 2px; line-height: 1.4; }
+.quest-card .q-meta { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+.q-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.q-tag.wish { background: #e8f5e9; color: #43a047; }
+.q-tag.gift { background: #fff3e0; color: #e67e22; }
+.q-tag.urgent { background: #ffebee; color: #e53935; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.q-reward { font-size: 11px; color: #d4924a; font-weight: 700; }
+.quest-card.done { opacity: 0.45; pointer-events: none; }
+.quest-card.done .q-title::after { content: ' ✓'; color: #43a047; }
+
+/* ===== Star Economy Panel ===== */
+.stars-panel { display: none; }
+.stars-panel.show { display: block; }
+.star-header {
+  text-align: center;
+  padding: 20px 0;
+}
+.star-count {
+  font-size: 48px;
+  font-weight: 800;
+  color: #d4924a;
+}
+.star-label { font-size: 13px; color: #8a7a6a; margin-top: 4px; }
+.unlock-tree { display: flex; flex-direction: column; gap: 8px; }
+.unlock-node {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid #f0e8e0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: 0.2s;
+}
+.unlock-node.locked { opacity: 0.5; }
+.unlock-node.unlocked { border-color: #43a047; background: #f9fdf9; }
+.unlock-node .unlock-icon { font-size: 28px; flex-shrink: 0; }
+.unlock-node .unlock-info { flex: 1; }
+.unlock-node .unlock-name { font-size: 13px; font-weight: 700; color: #4a3728; }
+.unlock-node .unlock-desc { font-size: 11px; color: #8a7a6a; margin-top: 2px; }
+.unlock-node .unlock-cost {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: #fff3e0;
+  color: #d4924a;
+}
+.unlock-node .unlock-cost.done { background: #e8f5e9; color: #43a047; }
+
+/* ===== Detail Page ===== */
+.detail-page { display: none; }
+.detail-page.active { display: block; }
+.detail-back {
+  display: inline-flex;
+  align-items: center; gap: 4px;
+  font-size: 13px; color: #8a7a6a;
+  cursor: pointer; margin-bottom: 12px; padding: 6px 0;
+}
+.detail-back:hover { color: #4a3728; }
+.detail-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: white;
+  border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #f0e8e0; margin-bottom: 12px;
+}
+.detail-hero .avatar { width: 68px; height: 68px; border-radius: 50%; font-size: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.detail-hero .info { flex: 1; }
+.detail-hero .name { font-size: 17px; font-weight: 800; color: #4a3728; }
+.detail-hero .personality { font-size: 11px; color: #8a7a6a; margin-top: 2px; }
+.detail-hero .affinity {
+  margin-top: 6px;
+  font-size: 11px; color: #d4924a;
+  display: flex; align-items: center; gap: 4px;
+}
+.detail-hero .mood-big { font-size: 36px; }
+
+/* Room */
+.room {
+  background: #fcf8f4;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #f0e8e0;
+}
+.room-title {
+  font-size: 12px; font-weight: 700; color: #8a7a6a;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+.room-scene {
+  width: 100%; height: 180px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 12px;
+  position: relative; overflow: hidden;
+  transition: background 0.5s;
+}
+.room-scene .furniture { font-size: 52px; transition: 0.3s; z-index: 1; }
+.room-scene .decor-item {
+  font-size: 28px;
+  position: absolute;
+  animation: popIn 0.6s ease;
+  z-index: 2;
+}
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.room-scene .empty-hint {
+  font-size: 12px; color: #b8a89a;
+  text-align: center; line-height: 1.5;
+}
+
+/* ===== Photo UI Overlay ===== */
+.photo-overlay {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: #fffaf5; z-index: 30;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px;
+}
+.photo-overlay.show { display: flex; }
+.photo-overlay h2 { font-size: 19px; color: #4a3728; margin-bottom: 4px; }
+.photo-overlay .photo-subtitle { font-size: 12px; color: #8a7a6a; margin-bottom: 20px; text-align: center; line-height: 1.5; }
+.viewfinder {
+  width: 260px; height: 260px;
+  background: #f0e8e0;
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #b8a89a;
+  margin-bottom: 16px;
+  position: relative; overflow: hidden;
+  border: 3px dashed #e0d6cc;
+}
+.viewfinder .scene-preview { font-size: 64px; }
+.photo-option-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; width: 280px;
+}
+.photo-opt {
+  background: white;
+  border: 1px solid #e0d6cc;
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-size: 11px; color: #4a3728;
+  cursor: pointer; transition: 0.2s;
+  text-align: center;
+}
+.photo-opt:hover { border-color: #d4924a; background: #fffbf5; }
+.photo-opt:active { transform: scale(0.95); }
+.photo-opt .po-emoji { font-size: 26px; display: block; margin-bottom: 4px; }
+.photo-opt.selected {
+  border-color: #d4924a;
+  background: #fff3e0;
+  box-shadow: 0 0 0 3px rgba(212,146,74,0.15);
+}
+.gift-btn {
+  background: #d4924a;
+  color: white; border: none;
+  border-radius: 24px;
+  padding: 12px 36px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: 0.2s;
+  margin-top: 20px;
+}
+.gift-btn:hover { background: #c4843a; transform: translateY(-1px); }
+.gift-btn:disabled { background: #e0d6cc; cursor: not-allowed; transform: none; }
+.photo-cancel {
+  margin-top: 12px;
+  font-size: 13px; color: #8a7a6a;
+  cursor: pointer; background: none; border: none;
+}
+.photo-cancel:hover { color: #4a3728; }
+
+/* ===== Feedback Modal ===== */
+.feedback-overlay {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45); z-index: 40;
+  align-items: center; justify-content: center;
+}
+.feedback-overlay.show { display: flex; }
+.feedback-card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px 24px 22px;
+  max-width: 310px; width: 90%;
+  text-align: center;
+  animation: slideUp 0.4s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.fb-emoji { font-size: 52px; margin-bottom: 10px; }
+.fb-title { font-size: 17px; font-weight: 800; color: #4a3728; margin-bottom: 6px; }
+.fb-desc { font-size: 13px; color: #6a5a4a; line-height: 1.6; margin-bottom: 12px; }
+.fb-room-preview {
+  width: 100%; height: 100px;
+  background: #fcf8f4;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  font-size: 40px;
+  border: 1px solid #f0e8e0;
+}
+.fb-star { font-size: 13px; color: #d4924a; font-weight: 700; margin-bottom: 12px; }
+.fb-close {
+  background: #f0e8e0; color: #4a3728;
+  border: none; border-radius: 20px;
+  padding: 10px 28px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: 0.2s;
+}
+.fb-close:hover { background: #e0d6cc; }
+
+/* ===== Bottom Nav ===== */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid #f0e8e0;
+  background: #fffaf5;
+  padding: 6px 16px 18px;
+}
+.nav-item {
+  flex: 1; text-align: center;
+  font-size: 10px; color: #b8a89a;
+  cursor: pointer; transition: 0.2s;
+  padding: 6px 0;
+}
+.nav-item .nav-icon { font-size: 22px; display: block; margin-bottom: 2px; }
+.nav-item.active { color: #d4924a; font-weight: 700; }
+.nav-item:hover { color: #6a5a4a; }
+
+/* ===== Empty State ===== */
+.empty-state { text-align: center; padding: 32px 20px; }
+.empty-state .ee { font-size: 44px; margin-bottom: 10px; }
+.empty-state .et { font-size: 14px; color: #8a7a6a; line-height: 1.6; }
+
+/* ===== Toast ===== */
+.toast {
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  background: #4a3728; color: white;
+  padding: 8px 20px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  z-index: 50; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+
+/* Utility */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>📶 🔋 100%</span>
+  </div>
+
+  <!-- Walking Chain Banner -->
+  <div class="chain-banner" id="chainBanner" onclick="showChainDetail()">
+    <div class="chain-left">
+      <span class="chain-icon">🔥</span>
+      <div class="chain-info">
+        <div class="chain-day" id="chainDay">散步链 · 第 1 天</div>
+        <div class="chain-sub" id="chainSub">再坚持 2 天解锁奖励 ✨</div>
+      </div>
+    </div>
+    <div class="chain-streak" id="chainStreak">1</div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🐾 万事屋</h1>
+    <div class="header-actions">
+      <div class="coin-badge" onclick="switchPage('stars')">⭐ <span id="starDisplay">0</span></div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content" id="mainContent">
+
+    <!-- Page: Community (default) -->
+    <div id="page-community">
+      <!-- Weather / time contextual hint -->
+      <div style="font-size:12px; color:#8a7a6a; margin-bottom:4px; text-align:center;" id="weatherHint">
+        ☀️ 今天天气真好，小动物们想你了
+      </div>
+
+      <!-- Animal Grid -->
+      <div class="section-title">🏘️ 社区居民</div>
+      <div class="animal-grid" id="animalGrid"></div>
+
+      <!-- Moments Feed -->
+      <div class="section-title">📱 社区朋友圈</div>
+      <div class="moments-feed" id="momentsFeed"></div>
+      <div style="text-align:center; padding:16px; font-size:12px; color:#b8a89a;">
+        — 小动物社区 · 温馨日常 —
+      </div>
+    </div>
+
+    <!-- Page: Wishes -->
+    <div id="page-wishes" class="hidden">
+      <div style="font-size:12px; color:#8a7a6a; margin-bottom:12px; text-align:center;">
+        心愿每日刷新，今天有这些在等你 ✨
+      </div>
+      <!-- Urgent / time-limited -->
+      <div class="section-title">⏰ 限时心愿（今日）</div>
+      <div class="quest-list" id="urgentQuests"></div>
+      <!-- Regular -->
+      <div class="section-title">🎁 礼物模式</div>
+      <div class="quest-list" id="giftQuests"></div>
+    </div>
+
+    <!-- Page: Moments -->
+    <div id="page-moments" class="hidden">
+      <div style="font-size:12px; color:#8a7a6a; margin-bottom:12px; text-align:center;">
+        看看小动物们今天在聊什么 📱
+      </div>
+      <div class="moments-feed" id="momentsFullFeed"></div>
+    </div>
+
+    <!-- Page: Stars Economy -->
+    <div id="page-stars" class="hidden">
+      <div class="star-header">
+        <div class="star-count">⭐ <span id="starCountLarge">0</span></div>
+        <div class="star-label">社区星星</div>
+      </div>
+      <div class="section-title">🌳 社区建设</div>
+      <div class="unlock-tree" id="unlockTree"></div>
+    </div>
+
+    <!-- Page: Animal Detail -->
+    <div id="page-detail" class="hidden">
+      <div class="detail-back" onclick="backToCommunity()">← 返回社区</div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <div class="nav-item active" data-page="community" onclick="switchPage('community')">
+      <span class="nav-icon">🏘️</span> 社区
+    </div>
+    <div class="nav-item" data-page="wishes" onclick="switchPage('wishes')">
+      <span class="nav-icon">✨</span> 心愿
+    </div>
+    <div class="nav-item" data-page="moments" onclick="switchPage('moments')">
+      <span class="nav-icon">📱</span> 朋友圈
+    </div>
+    <div class="nav-item" data-page="stars" onclick="switchPage('stars')">
+      <span class="nav-icon">⭐</span> 星星
+    </div>
+  </div>
+
+  <!-- Photo Overlay -->
+  <div class="photo-overlay" id="photoOverlay">
+    <h2>📸 拍一张吧</h2>
+    <div class="photo-subtitle" id="photoPrompt">小动物在等着呢～</div>
+    <div class="viewfinder" id="viewfinder">
+      <span id="vfPlaceholder">选择你要拍的东西 👇</span>
+      <span class="scene-preview hidden" id="scenePreview"></span>
+    </div>
+    <div class="photo-option-grid" id="photoOptions"></div>
+    <button class="gift-btn" id="giftBtn" disabled onclick="submitPhoto()">交给小动物 🎁</button>
+    <button class="photo-cancel" onclick="cancelPhoto()">先不拍了</button>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div class="feedback-overlay" id="feedbackOverlay">
+    <div class="feedback-card">
+      <div class="fb-emoji" id="fbEmoji"></div>
+      <div class="fb-title" id="fbTitle"></div>
+      <div class="fb-desc" id="fbDesc"></div>
+      <div class="fb-room-preview" id="fbRoomPreview"></div>
+      <div class="fb-star" id="fbStar"></div>
+      <button class="fb-close" onclick="closeFeedback()">太好了！</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const animals = [
+  {
+    id: 'bunny',
+    name: '糯糯',
+    fullName: '小兔子糯糯',
+    emoji: '🐰',
+    color: '#fce4ec',
+    personality: '温柔软萌 · 喜欢花和可爱的东西',
+    mood: '😊',
+    homeBg: '#fdf2f5',
+    furniture: '🛋️',
+    decorPositions: [
+      { bottom: '18%', right: '28%' },
+      { bottom: '60%', right: '15%' },
+      { bottom: '12%', left: '30%' },
+      { bottom: '55%', left: '18%' },
+    ],
+    decor: [],
+    affinity: 0,
+    reactions: {
+      '🌷': '好漂亮的花花！我要把它插在花瓶里，每天起床都能看到 💐',
+      '☁️': '哇，软软的云朵！好像棉花糖一样，我要画下来 🖼️',
+      '🍂': '这片叶子形状好特别！做成书签一定很好看 📖',
+      '🌟': '这个图案太可爱了！我要绣在枕头上 ✨',
+      '🎨': '好温柔的颜色呀！和你一样温暖 🧣',
+      '🏠': '这里的风景真好，下次我们一起去看吧 🌸',
+    },
+    reactionTitle: '糯糯开心极了！',
+    quests: [
+      { id: 'b1', type: 'wish', urgent: true, title: '想寄一张明信片', desc: '能帮我拍一张好看的花花吗？我想寄给森林那边的朋友。', reward: 10, tags: ['🌷', '🏠'] },
+      { id: 'b2', type: 'gift', urgent: false, title: '想要新抱枕图案', desc: '去外面看到好看的图案，拍下来给我好吗？我想做成抱枕～', reward: 10, tags: ['🌟', '🎨'] },
+    ]
+  },
+  {
+    id: 'cat',
+    name: '小橘',
+    fullName: '猫猫小橘',
+    emoji: '🐱',
+    color: '#fff3e0',
+    personality: '傲娇嘴硬心软 · 喜欢有设计感的东西',
+    mood: '😼',
+    homeBg: '#fef8f0',
+    furniture: '📚',
+    decorPositions: [
+      { bottom: '15%', left: '25%' },
+      { bottom: '65%', right: '20%' },
+      { bottom: '10%', right: '35%' },
+      { bottom: '50%', left: '15%' },
+    ],
+    decor: [],
+    affinity: 0,
+    reactions: {
+      '🌷': '哼……这朵花还算好看啦。我会放在桌上的。',
+      '☁️': '云的形状……还行吧。帮你画下来了。',
+      '🍂': '这片叶子纹理有点意思，可以作为纹身参考。',
+      '🌟': '嗯，这个图案设计感不错。可以纹上去。',
+      '🎨': '这个配色……还算有品味。可以放在书架上。',
+      '🏠': '风景不错。不过我更喜欢我的书房。',
+    },
+    reactionTitle: '哼……还不错啦。',
+    quests: [
+      { id: 'c1', type: 'wish', urgent: true, title: '想纹个新图案', desc: '最近想纹身但没灵感，你帮我看看外面有什么好看的图案吧。', reward: 12, tags: ['🌟', '🎨'] },
+      { id: 'c2', type: 'gift', urgent: false, title: '桌上的小花', desc: '路过的花丛帮我带一朵回来吧，书桌上有点空。', reward: 10, tags: ['🌷', '🍂'] },
+    ]
+  },
+  {
+    id: 'dog',
+    name: '旺财',
+    fullName: '狗狗旺财',
+    emoji: '🐶',
+    color: '#e8f5e9',
+    personality: '阳光热情大暖男 · 喜欢自然和户外',
+    mood: '🤗',
+    homeBg: '#f0faf0',
+    furniture: '🏋️',
+    decorPositions: [
+      { bottom: '20%', right: '20%' },
+      { bottom: '58%', left: '22%' },
+      { bottom: '14%', left: '32%' },
+      { bottom: '60%', right: '18%' },
+    ],
+    decor: [],
+    affinity: 0,
+    reactions: {
+      '🌷': '哇！！！这朵花真好看！我要把它放在窗台上 🌻',
+      '☁️': '今天的天空好蓝啊！拍得真好！打印出来挂墙上！',
+      '🍂': '好耶！这片叶子可以做拼豆图纸！我这就动手！',
+      '🌟': '这个图案太厉害了！我的新拼豆有灵感了！',
+      '🎨': '这颜色太棒了吧！我要用这个配色做运动装备！',
+      '🏠': '这里看起来好好玩！下次带我一起去吧！🐾',
+    },
+    reactionTitle: '哇！太棒了！！！',
+    quests: [
+      { id: 'd1', type: 'wish', urgent: false, title: '想要拼豆图纸', desc: '想做一个新拼豆但没有图纸！帮我拍个喜欢的形状吧。', reward: 12, tags: ['🌟', '🎨'] },
+      { id: 'd2', type: 'gift', urgent: true, title: '今天的天空', desc: '今天阳光好好！帮我拍一张蓝蓝的天空吧，想看 ☀️', reward: 10, tags: ['☁️', '🏠'] },
+    ]
+  },
+  {
+    id: 'owl',
+    name: '咕咕',
+    fullName: '猫头鹰咕咕',
+    emoji: '🦉',
+    color: '#ede7f6',
+    personality: '沉稳哲学家 · 喜欢颜色、纹理和有深意的东西',
+    mood: '🤔',
+    homeBg: '#f4f0fa',
+    furniture: '📖',
+    decorPositions: [
+      { bottom: '22%', right: '25%' },
+      { bottom: '55%', left: '20%' },
+      { bottom: '16%', left: '28%' },
+      { bottom: '62%', right: '22%' },
+    ],
+    decor: [],
+    affinity: 0,
+    reactions: {
+      '🌷': '花的纹理真是大自然的杰作……我会好好收藏的。',
+      '☁️': '云卷云舒，道法自然。这张照片很有哲学意味。',
+      '🍂': '一叶知秋。这片叶子让我想到了一首诗。',
+      '🌟': '有趣的图案。美存在于秩序与混乱之间。',
+      '🎨': '这个颜色搭配让人感到宁静。很适合书房。',
+      '🏠': '街角的风景，总藏着生活的智慧。拍得好。',
+    },
+    reactionTitle: '嗯，很有品味。',
+    quests: [
+      { id: 'o1', type: 'wish', urgent: true, title: '想要一条新围巾', desc: '天凉了，想织一条围巾。帮我拍一张好看的颜色或纹理吧。', reward: 12, tags: ['🎨', '🍂'] },
+      { id: 'o2', type: 'gift', urgent: false, title: '一片有故事的叶子', desc: '散步时帮我留意一下形状特别的落叶好吗？想做书签。', reward: 10, tags: ['🍂', '🌟'] },
+    ]
+  },
+];
+
+const photoScenes = [
+  { emoji: '🌷', label: '一朵花', scene: '🌷🌸🌺🌻', roomEffect: '🌷' },
+  { emoji: '☁️', label: '天空/云', scene: '☁️🌈☀️⛅', roomEffect: '☁️' },
+  { emoji: '🍂', label: '落叶/自然', scene: '🍂🍁🌿🌱', roomEffect: '🍂' },
+  { emoji: '🌟', label: '好看的图案', scene: '🌟✨💫⭐', roomEffect: '🌟' },
+  { emoji: '🎨', label: '颜色/纹理', scene: '🎨🌈🖌️🟣', roomEffect: '🎨' },
+  { emoji: '🏠', label: '街角/风景', scene: '🏠🏘️🌆🌉', roomEffect: '🏠' },
+];
+
+const unlockStages = [
+  { stars: 0,   icon: '🌱', name: '初始社区',   desc: '4只小动物已经在这里等你了', cost: '免费' },
+  { stars: 30,  icon: '🌿', name: '新邻居搬来',  desc: '森林里有一只新朋友想加入社区', cost: '30⭐' },
+  { stars: 50,  icon: '🌳', name: '心理诊所',    desc: '调解小动物矛盾，帮助它们和解', cost: '50⭐' },
+  { stars: 80,  icon: '🌲', name: '房间装修',    desc: '帮小动物改造房间风格', cost: '80⭐' },
+  { stars: 100, icon: '🏡', name: '季节限定心愿', desc: '特殊季节任务线解锁', cost: '100⭐' },
+  { stars: 150, icon: '🌍', name: '公益兑换',    desc: '兑换真实世界公益证书', cost: '150⭐' },
+];
+
+// Pre-seeded moments
+const baseMoments = [
+  {
+    animal: animals[0], time: '今天 09:15',
+    content: '今天在窗边看到一朵超级好看的花花！好想出去走走看看更多 🌸',
+    image: '🌷🌸🌺',
+    likes: 23, comments: [
+      { from: '🐶 旺财', text: '糯糯！要不要一起去公园？我知道那边花很多！' },
+      { from: '🐱 小橘', text: '花而已……不过确实还行。' },
+      { from: '🐰 糯糯', text: '@旺财 好呀好呀！等我准备好小篮子～' },
+    ]
+  },
+  {
+    animal: animals[3], time: '昨天 18:42',
+    content: '读到一句很喜欢的话：「我们不是活在客观世界里，而是活在自己赋予意义的主观世界里。」与各位共勉。📖',
+    image: '📖✨',
+    likes: 15, comments: [
+      { from: '🐶 旺财', text: '咕咕说得太好了！虽然我不太懂但感觉很厉害！' },
+      { from: '🐱 小橘', text: '难得同意你一次。推荐阿德勒的书？' },
+      { from: '🦉 咕咕', text: '@小橘 正是。看来你也读过。' },
+    ]
+  },
+  {
+    animal: animals[2], time: '昨天 12:30',
+    content: '做了一个超～大～的拼豆！！！用的是今天的天空颜色！嘿嘿嘿太开心了 🎨✨',
+    image: '🎨☀️🌟',
+    likes: 31, comments: [
+      { from: '🐰 糯糯', text: '好厉害旺财！！可以帮我也做一个吗？想要粉色的 💕' },
+      { from: '🐶 旺财', text: '@糯糯 完全没问题！我这就去做！！！' },
+      { from: '🦉 咕咕', text: '配色不错，很有活力。' },
+    ]
+  },
+];
+
+// ==================== STATE ====================
+let state = {
+  stars: 0,
+  chainDay: 1,
+  currentPage: 'community',
+  currentAnimal: null,
+  currentQuest: null,
+  selectedPhotoIdx: null,
+  moments: [...baseMoments],
+  completedQuests: new Set(),
+};
+
+// ==================== INIT ====================
+function init() {
+  renderAll();
+  updateChainDisplay();
+  updateWeatherHint();
+}
+init();
+
+// ==================== RENDER ====================
+function renderAll() {
+  renderAnimals();
+  renderMoments('momentsFeed');
+  renderMoments('momentsFullFeed');
+  renderUrgentQuests();
+  renderGiftQuests();
+  renderUnlockTree();
+  updateStarDisplay();
+}
+
+function renderAnimals() {
+  const grid = document.getElementById('animalGrid');
+  if (!grid) return;
+  grid.innerHTML = animals.map(a => {
+    const pending = a.quests.filter(q => !state.completedQuests.has(`${a.id}-${q.id}`)).length;
+    return `
+      <div class="animal-card" onclick="openAnimalDetail('${a.id}')">
+        ${pending > 0 ? '<div class="pending-dot"></div>' : ''}
+        <div class="avatar" style="background:${a.color}">${a.emoji}</div>
+        <div class="name">${a.name}</div>
+        <div class="personality">${a.personality.slice(0, 12)}…</div>
+        <span class="mood-badge">${a.mood}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMoments(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (state.moments.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="ee">📱</div><div class="et">还没有朋友圈动态<br>完成一个心愿试试吧</div></div>';
+    return;
+  }
+  container.innerHTML = state.moments.map(m => `
+    <div class="moment-card">
+      <div class="moment-header">
+        <div class="moment-avatar" style="background:${m.animal.color}">${m.animal.emoji}</div>
+        <div>
+          <div class="moment-author">${m.animal.fullName}</div>
+          <div class="moment-time">${m.time}</div>
+        </div>
+      </div>
+      <div class="moment-body">${m.content}</div>
+      ${m.image ? `<div class="moment-image">${m.image}</div>` : ''}
+      <div class="moment-actions">
+        <span>❤️ ${m.likes}</span>
+        <span>💬 ${m.comments.length}</span>
+      </div>
+      <div class="moment-comments">
+        ${m.comments.map(c => `<div class="moment-comment"><strong>${c.from}</strong>：${c.text}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderUrgentQuests() {
+  const container = document.getElementById('urgentQuests');
+  if (!container) return;
+  const all = [];
+  animals.forEach(a => {
+    a.quests.filter(q => q.urgent && !state.completedQuests.has(`${a.id}-${q.id}`)).forEach(q => {
+      all.push({ ...q, animal: a, key: `${a.id}-${q.id}` });
+    });
+  });
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="ee">🎉</div><div class="et">今天的限时心愿都完成了！<br>去社区看看小动物们吧</div></div>';
+    return;
+  }
+  container.innerHTML = all.map(q => `
+    <div class="quest-card" onclick="startPhoto('${q.animal.id}','${q.id}')">
+      <span class="q-emoji">${q.animal.emoji}</span>
+      <div class="q-body">
+        <div class="q-title">${q.title}</div>
+        <div class="q-desc">${q.desc}</div>
+        <div class="q-meta">
+          <span class="q-tag urgent">⏰ 限时</span>
+          <span class="q-tag wish">✨ 心愿</span>
+          <span class="q-reward">⭐ +${q.reward}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderGiftQuests() {
+  const container = document.getElementById('giftQuests');
+  if (!container) return;
+  const all = [];
+  animals.forEach(a => {
+    a.quests.filter(q => !q.urgent && !state.completedQuests.has(`${a.id}-${q.id}`)).forEach(q => {
+      all.push({ ...q, animal: a, key: `${a.id}-${q.id}` });
+    });
+  });
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="ee">🌟</div><div class="et">所有礼物都送完啦<br>明天会有新的小动物在等你</div></div>';
+    return;
+  }
+  container.innerHTML = all.map(q => `
+    <div class="quest-card" onclick="startPhoto('${q.animal.id}','${q.id}')">
+      <span class="q-emoji">${q.animal.emoji}</span>
+      <div class="q-body">
+        <div class="q-title">${q.title}</div>
+        <div class="q-desc">${q.desc}</div>
+        <div class="q-meta">
+          <span class="q-tag gift">🎁 礼物</span>
+          <span class="q-reward">⭐ +${q.reward}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderUnlockTree() {
+  const container = document.getElementById('unlockTree');
+  if (!container) return;
+  container.innerHTML = unlockStages.map(s => {
+    const unlocked = state.stars >= s.stars;
+    return `
+      <div class="unlock-node ${unlocked ? 'unlocked' : 'locked'}">
+        <span class="unlock-icon">${s.icon}</span>
+        <div class="unlock-info">
+          <div class="unlock-name">${s.name}</div>
+          <div class="unlock-desc">${s.desc}</div>
+        </div>
+        <span class="unlock-cost ${unlocked ? 'done' : ''}">${unlocked ? '✅ 已解锁' : s.cost}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStarDisplay() {
+  document.getElementById('starDisplay').textContent = state.stars;
+  const large = document.getElementById('starCountLarge');
+  if (large) large.textContent = state.stars;
+}
+
+function updateChainDisplay() {
+  const milestones = [3, 7, 14, 30];
+  const nextMilestone = milestones.find(m => m > state.chainDay);
+  document.getElementById('chainDay').textContent = `散步链 · 第 ${state.chainDay} 天`;
+  if (nextMilestone) {
+    document.getElementById('chainSub').textContent = `再坚持 ${nextMilestone - state.chainDay} 天解锁阶段奖励 ✨`;
+  } else {
+    document.getElementById('chainSub').textContent = '太厉害了！你是社区的骄傲 🌟';
+  }
+  document.getElementById('chainStreak').textContent = state.chainDay;
+}
+
+function updateWeatherHint() {
+  const hints = [
+    '☀️ 今天天气真好，小动物们想你了',
+    '🌧️ 下雨天，小兔子想看看雨后的花',
+    '🌅 傍晚的晚霞很美，猫头鹰在等你拍照',
+    '🌸 春天来了，社区的花都开了',
+    '🍂 秋天到了，落叶给小动物们带来了灵感',
+    '❄️ 冬天，咕咕想要一条温暖的围巾',
+  ];
+  const idx = new Date().getDate() % hints.length;
+  document.getElementById('weatherHint').textContent = hints[idx];
+}
+
+// ==================== NAVIGATION ====================
+function switchPage(page) {
+  state.currentPage = page;
+
+  // Hide all pages
+  ['community', 'wishes', 'moments', 'stars'].forEach(p => {
+    const el = document.getElementById(`page-${p}`);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('page-detail').classList.add('hidden');
+
+  // Show target
+  const target = document.getElementById(`page-${page}`);
+  if (target) target.classList.remove('hidden');
+
+  // Update bottom nav
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+
+  // Re-render dynamic pages
+  if (page === 'wishes') { renderUrgentQuests(); renderGiftQuests(); }
+  if (page === 'moments') renderMoments('momentsFullFeed');
+  if (page === 'stars') renderUnlockTree();
+}
+
+function openAnimalDetail(animalId) {
+  const a = animals.find(x => x.id === animalId);
+  if (!a) return;
+  state.currentAnimal = a;
+
+  ['community', 'wishes', 'moments', 'stars'].forEach(p => {
+    const el = document.getElementById(`page-${p}`);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('page-detail').classList.remove('hidden');
+
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+  const pending = a.quests.filter(q => !state.completedQuests.has(`${a.id}-${q.id}`));
+  const decorItems = a.decor.map((d, i) => {
+    const pos = a.decorPositions[i] || {};
+    return `<span class="decor-item" style="${Object.entries(pos).map(([k,v]) => `${k}:${v}`).join(';')}">${d}</span>`;
+  }).join('');
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-hero">
+      <div class="avatar" style="background:${a.color}">${a.emoji}</div>
+      <div class="info">
+        <div class="name">${a.fullName}</div>
+        <div class="personality">${a.personality}</div>
+        <div class="affinity">💕 好感度：${'❤️'.repeat(Math.min(a.affinity, 5))}${'🤍'.repeat(Math.max(5 - a.affinity, 0))}</div>
+      </div>
+      <div class="mood-big">${a.mood}</div>
+    </div>
+
+    <div class="room">
+      <div class="room-title">🏡 ${a.name} 的家 · ${['温馨小屋','文艺书架','活力空间','哲学书房'][animals.indexOf(a)]}</div>
+      <div class="room-scene" style="background:${a.homeBg}">
+        <span class="furniture">${a.furniture}</span>
+        ${decorItems}
+        ${a.decor.length === 0 ? '<span class="empty-hint">💐 房间还是空空的<br>去散散步，帮它带点东西回来吧</span>' : ''}
+      </div>
+    </div>
+
+    <div class="section-title">${pending.length > 0 ? '📋 待完成的心愿' : '✅ 所有心愿都完成啦'}</div>
+    <div class="quest-list">
+      ${a.quests.map(q => {
+        const completed = state.completedQuests.has(`${a.id}-${q.id}`);
+        return `
+          <div class="quest-card ${completed ? 'done' : ''}" onclick="${completed ? '' : `startPhoto('${a.id}','${q.id}')`}">
+            <span class="q-emoji">${a.emoji}</span>
+            <div class="q-body">
+              <div class="q-title">${q.title}</div>
+              <div class="q-desc">${q.desc}</div>
+              <div class="q-meta">
+                <span class="q-tag ${q.urgent ? 'urgent' : (q.type === 'wish' ? 'wish' : 'gift')}">
+                  ${q.urgent ? '⏰ 限时' : (q.type === 'wish' ? '✨ 心愿' : '🎁 礼物')}
+                </span>
+                ${!completed ? `<span class="q-reward">⭐ +${q.reward}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function backToCommunity() {
+  state.currentAnimal = null;
+  switchPage('community');
+}
+
+function showChainDetail() {
+  const milestones = [3, 7, 14, 30];
+  const rewards = ['新装饰解锁', '特殊小动物来访', '新对话主题', '限定房间风格'];
+  const msgs = milestones.map((m, i) => {
+    const reached = state.chainDay >= m;
+    return `${reached ? '✅' : '🔒'} 第${m}天：${rewards[i]}`;
+  }).join('\n');
+  showToast(`🔥 散步链奖励路线\n${msgs}`);
+}
+
+// ==================== PHOTO FLOW ====================
+function startPhoto(animalId, questId) {
+  const a = animals.find(x => x.id === animalId);
+  if (!a) return;
+  const q = a.quests.find(x => x.id === questId);
+  if (!q) return;
+
+  state.currentAnimal = a;
+  state.currentQuest = q;
+  state.selectedPhotoIdx = null;
+
+  document.getElementById('photoPrompt').textContent = `${a.emoji} ${a.name}：${q.desc}`;
+  document.getElementById('vfPlaceholder').classList.remove('hidden');
+  const sp = document.getElementById('scenePreview');
+  sp.classList.add('hidden');
+  document.getElementById('giftBtn').disabled = true;
+
+  // Render photo options, highlight relevant ones
+  const optionsContainer = document.getElementById('photoOptions');
+  optionsContainer.innerHTML = photoScenes.map((p, i) => {
+    const relevant = q.tags ? q.tags.includes(p.emoji) : false;
+    return `
+      <div class="photo-opt" data-idx="${i}" onclick="selectPhoto(${i})">
+        <span class="po-emoji">${p.emoji}</span>
+        ${p.label}
+        ${relevant ? '<span style="font-size:9px;color:#d4924a;display:block;">推荐</span>' : ''}
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('photoOverlay').classList.add('show');
+}
+
+function selectPhoto(idx) {
+  state.selectedPhotoIdx = idx;
+  const scene = photoScenes[idx];
+
+  document.querySelectorAll('.photo-opt').forEach(el => el.classList.remove('selected'));
+  document.querySelector(`.photo-opt[data-idx="${idx}"]`).classList.add('selected');
+
+  document.getElementById('vfPlaceholder').classList.add('hidden');
+  const sp = document.getElementById('scenePreview');
+  sp.classList.remove('hidden');
+  sp.textContent = scene.scene;
+
+  document.getElementById('giftBtn').disabled = false;
+}
+
+function submitPhoto() {
+  if (state.selectedPhotoIdx === null || !state.currentAnimal || !state.currentQuest) return;
+
+  const scene = photoScenes[state.selectedPhotoIdx];
+  const a = state.currentAnimal;
+  const q = state.currentQuest;
+  const questKey = `${a.id}-${q.id}`;
+
+  // Mark complete
+  state.completedQuests.add(questKey);
+  state.stars += q.reward;
+  a.affinity = Math.min(a.affinity + 1, 5);
+
+  // Add decor to room
+  a.decor.push(scene.roomEffect);
+
+  // Update mood
+  const moodProgression = ['😊','😄','🥰','🤗','😌','😍'];
+  a.mood = moodProgression[Math.min(a.decor.length, moodProgression.length - 1)];
+
+  // Add a moment
+  const timeStr = '刚刚';
+  const momentContent = `收到了${scene.label}的${q.type === 'wish' ? '心愿' : '礼物'}！${a.reactions[scene.emoji]?.split('！')[0] || '好开心！'}！`;
+  const newMoment = {
+    animal: a,
+    time: timeStr,
+    content: `${a.emoji} ${a.name}：${momentContent}`,
+    image: `${scene.roomEffect} ${a.furniture} ${scene.emoji}`,
+    likes: Math.floor(Math.random() * 15) + 5,
+    comments: generateComments(a, scene),
+  };
+  state.moments.unshift(newMoment);
+
+  // Close photo UI
+  document.getElementById('photoOverlay').classList.remove('show');
+
+  // Show feedback
+  showFeedback(a, scene, q);
+
+  // Refresh everything
+  updateStarDisplay();
+  renderAll();
+  if (state.currentPage === 'wishes') { renderUrgentQuests(); renderGiftQuests(); }
+
+  // If on detail page, refresh it
+  if (document.getElementById('page-detail') && !document.getElementById('page-detail').classList.contains('hidden')) {
+    openAnimalDetail(a.id);
+  }
+}
+
+function generateComments(a, scene) {
+  const others = animals.filter(x => x.id !== a.id);
+  const commenter = others[Math.floor(Math.random() * others.length)];
+  const secondCommenter = others.filter(x => x.id !== commenter.id)[Math.floor(Math.random() * (others.length - 1))];
+
+  const commentBanks = {
+    bunny: ['好漂亮呀糯糯！', '可以借我看看吗？', '我也想要一个～'],
+    cat: ['哼……还不错。', '品味还行吧。', '嗯，可以的。'],
+    dog: ['哇！太厉害了！', '好棒好棒好棒！', '下次帮我带一个！'],
+    owl: ['很有品味，我认证了。', '不错，值得收藏。', '有眼光。'],
+  };
+
+  return [
+    { from: `${commenter.emoji} ${commenter.name}`, text: commentBanks[commenter.id]?.[Math.floor(Math.random() * 3)] || '真好看！' },
+    { from: `${secondCommenter.emoji} ${secondCommenter.name}`, text: commentBanks[secondCommenter.id]?.[Math.floor(Math.random() * 3)] || '好羡慕啊～' },
+  ];
+}
+
+function cancelPhoto() {
+  document.getElementById('photoOverlay').classList.remove('show');
+  state.currentAnimal = null;
+  state.currentQuest = null;
+  state.selectedPhotoIdx = null;
+}
+
+// ==================== FEEDBACK MODAL ====================
+function showFeedback(a, scene, q) {
+  const fb = document.getElementById('feedbackOverlay');
+  fb.classList.add('show');
+
+  document.getElementById('fbEmoji').textContent = a.emoji;
+  document.getElementById('fbTitle').textContent = a.reactionTitle;
+  document.getElementById('fbDesc').textContent = a.reactions[scene.emoji] || '好喜欢！谢谢你！';
+  document.getElementById('fbRoomPreview').innerHTML = `${a.furniture} ${a.decor.join(' ')}`;
+  document.getElementById('fbStar').textContent = `⭐ +${q.reward} 星星`;
+}
+
+function closeFeedback() {
+  document.getElementById('feedbackOverlay').classList.remove('show');
+  state.currentAnimal = null;
+  state.currentQuest = null;
+  state.selectedPhotoIdx = null;
+}
+
+// ==================== TOAST ====================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.whiteSpace = 'pre-line';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ==================== SIMULATE DAILY CHECK-IN ====================
+// (For demo: click the chain banner to simulate a day)
+let chainClicked = false;
+document.getElementById('chainBanner').addEventListener('dblclick', function(e) {
+  if (chainClicked) return;
+  chainClicked = true;
+  state.chainDay++;
+  state.stars += 5;
+  updateChainDisplay();
+  updateStarDisplay();
+  renderUnlockTree();
+  showToast('🔥 散步打卡成功！连续第 ' + state.chainDay + ' 天 ⭐+5');
+  setTimeout(() => { chainClicked = false; }, 2000);
+});
+
+// ==================== INIT COMPLETE ====================
+console.log('🐾 小动物万事屋 Demo 已就绪');
+console.log('  核心系统：散步链 · 双任务模式 · 朋友圈 · 星星经济 · 房间装饰');
+console.log('  💡 提示：双击散步链横幅可以模拟每日打卡');
+</script>
+
+</body>
+</html>

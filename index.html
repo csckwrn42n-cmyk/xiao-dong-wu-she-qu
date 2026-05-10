@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>小动物记录屋 📖</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Serif SC', 'PingFang SC', serif;
+  background: #2a2218;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* ===== Phone Frame ===== */
+.phone {
+  width: 400px;
+  height: 860px;
+  background: #1a1410;
+  border-radius: 40px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.4), 0 0 0 3px #3a2a1a;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Status Bar ===== */
+.status-bar {
+  padding: 14px 28px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #c8b89a;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: #1a1410;
+  z-index: 5;
+}
+
+/* ===== SCENE CONTAINER ===== */
+.scene {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    #fdf2e0 0%, #fce8d0 5%, #f5dbb5 15%,
+    #e8d5b0 25%, #d4c4a0 35%, #c4b898 45%,
+    #a8c4a0 55%, #8ab88a 65%, #6aaa78 75%,
+    #5a9868 85%, #4a8058 95%, #3a6848 100%
+  );
+}
+
+/* ---- Scene layers ---- */
+.scene-layer {
+  position: absolute; left: 0; right: 0;
+  pointer-events: none;
+}
+
+/* Sky gradient */
+.sky {
+  top: 0; height: 45%;
+  background: linear-gradient(180deg,
+    #fef5e8 0%, #fde8cc 30%, #fad8a8 70%, #f5c898 100%
+  );
+  opacity: 0.95;
+}
+
+/* Sun */
+.sun {
+  position: absolute;
+  top: 8%; right: 15%;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff8e0 0%, #ffe8b0 30%, #ffd080 70%, transparent 100%);
+  box-shadow: 0 0 60px rgba(255,210,120,0.4), 0 0 120px rgba(255,180,80,0.2);
+  animation: sunGlow 4s ease-in-out infinite;
+}
+@keyframes sunGlow {
+  0%,100% { box-shadow: 0 0 60px rgba(255,210,120,0.4), 0 0 120px rgba(255,180,80,0.2); }
+  50% { box-shadow: 0 0 80px rgba(255,210,120,0.6), 0 0 150px rgba(255,180,80,0.3); }
+}
+
+/* Mountains */
+.mountains {
+  top: 18%; height: 25%;
+}
+.mountain {
+  position: absolute; bottom: 0;
+  width: 0; height: 0;
+  border-style: solid;
+}
+.mountain.m1 {
+  left: -5%;
+  border-width: 0 120px 180px;
+  border-color: transparent transparent #d4c8b0 transparent;
+}
+.mountain.m2 {
+  left: 20%;
+  border-width: 0 100px 140px;
+  border-color: transparent transparent #c8bca0 transparent;
+}
+.mountain.m3 {
+  right: 10%;
+  border-width: 0 130px 160px;
+  border-color: transparent transparent #d0c4a8 transparent;
+}
+.mountain.m4 {
+  right: -8%;
+  border-width: 0 140px 200px;
+  border-color: transparent transparent #ccc0a4 transparent;
+}
+
+/* Clouds */
+.cloud {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+.cloud::before, .cloud::after {
+  content: ''; position: absolute;
+  background: white; border-radius: 50%;
+}
+.cloud.c1 {
+  top: 12%; left: 10%;
+  width: 50px; height: 20px;
+  animation: cloudFloat 20s linear infinite;
+}
+.cloud.c1::before { width: 24px; height: 24px; top: -12px; left: 10px; }
+.cloud.c1::after { width: 16px; height: 16px; top: -6px; left: 30px; }
+.cloud.c2 {
+  top: 20%; right: 20%;
+  width: 60px; height: 22px;
+  animation: cloudFloat 25s linear infinite reverse;
+}
+.cloud.c2::before { width: 28px; height: 28px; top: -14px; left: 12px; }
+.cloud.c2::after { width: 18px; height: 18px; top: -7px; left: 38px; }
+@keyframes cloudFloat {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(40px); }
+}
+
+/* Ground / village */
+.ground {
+  bottom: 0; height: 50%;
+  background: linear-gradient(180deg,
+    #8ab88a 0%, #7aac78 10%, #6a9c68 30%,
+    #5a8c58 50%, #4a7c48 70%, #3a6c38 100%
+  );
+}
+
+/* Path */
+.path {
+  position: absolute;
+  bottom: 8%; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 35%;
+  background: linear-gradient(180deg, rgba(210,190,160,0.5) 0%, rgba(200,180,150,0.4) 100%);
+  border-radius: 40% 40% 0 0;
+  clip-path: polygon(20% 0%, 80% 0%, 95% 100%, 5% 100%);
+}
+
+/* Trees */
+.tree {
+  position: absolute;
+  pointer-events: none;
+}
+.tree .trunk {
+  width: 10px; height: 30px;
+  background: #8b6f4e;
+  margin: 0 auto;
+  border-radius: 2px;
+}
+.tree .canopy {
+  width: 50px; height: 50px;
+  background: radial-gradient(circle, #7aaa60, #5a9040);
+  border-radius: 50%;
+  margin-top: -10px;
+  margin-left: -20px;
+}
+.tree.t1 { bottom: 45%; left: 5%; }
+.tree.t2 { bottom: 48%; right: 8%; }
+.tree.t3 { bottom: 42%; left: 75%; }
+.tree.t4 { bottom: 50%; right: 25%; }
+
+/* ---- Buildings ---- */
+.building {
+  position: absolute;
+  pointer-events: none;
+}
+.building .roof {
+  width: 0; height: 0;
+  border-style: solid;
+  margin: 0 auto;
+}
+.building .wall {
+  border-radius: 4px;
+  position: relative;
+}
+.building .window {
+  position: absolute;
+  background: #fff8e8;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255,240,200,0.5);
+}
+.building .door {
+  position: absolute;
+  border-radius: 3px 3px 0 0;
+}
+
+/* Bakery (Melody's studio) */
+.bakery {
+  bottom: 32%; left: 3%;
+}
+.bakery .roof {
+  border-width: 0 38px 22px;
+  border-color: transparent transparent #c4725a transparent;
+}
+.bakery .wall {
+  width: 66px; height: 50px;
+  background: #f5e6d8;
+}
+.bakery .window { width: 12px; height: 14px; top: 10px; }
+.bakery .window.w1 { left: 8px; }
+.bakery .window.w2 { right: 8px; }
+.bakery .door { width: 16px; height: 24px; bottom: 0; left: 25px; background: #a0523d; }
+
+/* Library (Yanshu's house) */
+.library {
+  bottom: 28%; left: 25%;
+}
+.library .roof {
+  border-width: 0 42px 26px;
+  border-color: transparent transparent #8b6b4e transparent;
+}
+.library .wall {
+  width: 74px; height: 55px;
+  background: #ede0cc;
+}
+.library .window { width: 14px; height: 16px; top: 10px; }
+.library .window.w1 { left: 8px; }
+.library .window.w2 { right: 8px; }
+.library .door { width: 18px; height: 28px; bottom: 0; left: 28px; background: #6b5040; }
+
+/* Bookstore (Yezhi's shop) */
+.bookstore {
+  bottom: 35%; right: 22%;
+}
+.bookstore .roof {
+  border-width: 0 38px 22px;
+  border-color: transparent transparent #7a8b6e transparent;
+}
+.bookstore .wall {
+  width: 66px; height: 48px;
+  background: #f0e8d8;
+}
+.bookstore .window { width: 11px; height: 13px; top: 10px; }
+.bookstore .window.w1 { left: 7px; }
+.bookstore .window.w2 { right: 7px; }
+.bookstore .door { width: 15px; height: 22px; bottom: 0; left: 25px; background: #5a6b4e; }
+
+/* Cafe (Adu's dock) */
+.cafe {
+  bottom: 22%; right: 3%;
+}
+.cafe .roof {
+  border-width: 0 36px 20px;
+  border-color: transparent transparent #6b8090 transparent;
+}
+.cafe .wall {
+  width: 62px; height: 44px;
+  background: #e8ecf0;
+}
+.cafe .window { width: 11px; height: 13px; top: 9px; }
+.cafe .window.w1 { left: 7px; }
+.cafe .window.w2 { right: 7px; }
+.cafe .door { width: 15px; height: 22px; bottom: 0; left: 23px; background: #4a6070; }
+
+/* Cinema (Juzai's place) */
+.cinema {
+  bottom: 38%; right: 50%;
+}
+.cinema .roof {
+  border-width: 0 34px 18px;
+  border-color: transparent transparent #6b5a5a transparent;
+}
+.cinema .wall {
+  width: 58px; height: 42px;
+  background: #e8ded8;
+}
+.cinema .window { width: 10px; height: 12px; top: 8px; }
+.cinema .window.w1 { left: 6px; }
+.cinema .window.w2 { right: 6px; }
+.cinema .door { width: 14px; height: 20px; bottom: 0; left: 22px; background: #4a3a3a; }
+
+/* Flower shop / Greenhouse (Lvluo's greenhouse) */
+.greenhouse {
+  bottom: 30%; left: 55%;
+}
+.greenhouse .roof {
+  border-width: 0 40px 24px;
+  border-color: transparent transparent rgba(160,200,160,0.6) transparent;
+}
+.greenhouse .wall {
+  width: 70px; height: 52px;
+  background: rgba(220,240,220,0.5);
+  border: 2px solid rgba(160,200,160,0.4);
+}
+.greenhouse .door { width: 16px; height: 24px; bottom: 0; left: 27px; background: rgba(120,160,120,0.6); }
+
+/* ---- Animals (interactive characters) ---- */
+.animal-sprite {
+  position: absolute;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.3s ease;
+  z-index: 3;
+}
+.animal-sprite:hover { transform: scale(1.15); }
+.animal-sprite:active { transform: scale(0.95); }
+.animal-sprite .sprite-body {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: relative;
+  transition: box-shadow 0.3s;
+}
+.animal-sprite:hover .sprite-body {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+.animal-sprite .sprite-label {
+  text-align: center;
+  font-size: 9px;
+  color: #4a3728;
+  margin-top: 3px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+  white-space: nowrap;
+}
+
+/* Event indicator */
+.event-indicator {
+  position: absolute;
+  top: -12px; right: -12px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  animation: eventPulse 1.5s ease-in-out infinite;
+  z-index: 4;
+}
+@keyframes eventPulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,107,107,0.4); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255,107,107,0); }
+}
+.event-indicator.quarrel { background: #ff6b6b; }
+.event-indicator.contest { background: #ffa726; }
+.event-indicator.celebrate { background: #66bb6a; }
+
+/* Speech bubble above animals */
+.speech-bubble {
+  position: absolute;
+  top: -48px; left: 50%; transform: translateX(-50%);
+  background: white;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #4a3728;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  pointer-events: none;
+  animation: floatBubble 3s ease-in-out infinite;
+  z-index: 5;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+}
+@keyframes floatBubble {
+  0%,100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+/* ---- Dialogue Overlay ---- */
+.dialogue-overlay {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 20;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.dialogue-overlay.show { display: flex; }
+
+.dialogue-dim {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(20,14,8,0.55);
+  transition: background 0.5s;
+}
+
+.dialogue-stage {
+  position: relative;
+  display: flex; align-items: center;
+  padding: 0 20px 10px;
+  gap: 14px;
+}
+.dialogue-portrait {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  border: 3px solid rgba(255,255,255,0.3);
+  animation: portraitEnter 0.5s ease;
+}
+@keyframes portraitEnter {
+  from { transform: scale(0.5) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.dialogue-bubble {
+  flex: 1;
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px 20px 20px 6px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  min-height: 70px;
+  animation: bubbleIn 0.5s ease 0.1s both;
+}
+@keyframes bubbleIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.dialogue-bubble .db-text {
+  font-size: 13px; color: #4a3728;
+  line-height: 1.7;
+}
+.dialogue-bubble .db-name {
+  font-size: 11px; color: #b8a89a;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.dialogue-response-area {
+  position: relative;
+  padding: 10px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.response-option {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(200,180,160,0.5);
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #4a3728;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+  font-family: inherit;
+  backdrop-filter: blur(4px);
+  animation: optionIn 0.4s ease both;
+}
+@keyframes optionIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.response-option:nth-child(2) { animation-delay: 0.05s; }
+.response-option:nth-child(3) { animation-delay: 0.1s; }
+.response-option:hover {
+  background: rgba(255,245,235,0.95);
+  border-color: #d4924a;
+}
+.response-option:active { transform: scale(0.97); }
+
+.dialogue-input-row {
+  display: flex; gap: 8px;
+}
+.dialogue-input-row input {
+  flex: 1;
+  border: 1px solid rgba(200,180,160,0.5);
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  background: rgba(255,255,255,0.85);
+  font-family: inherit;
+  outline: none;
+  backdrop-filter: blur(4px);
+}
+.dialogue-input-row input:focus { border-color: #d4924a; }
+.dialogue-input-row button {
+  background: #d4924a;
+  color: white; border: none;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dialogue-input-row button:disabled {
+  background: rgba(180,160,140,0.5);
+  cursor: not-allowed;
+}
+
+/* Close dialogue */
+.dialogue-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3);
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 25;
+  display: flex; align-items: center; justify-content: center;
+}
+.dialogue-close:hover { background: rgba(0,0,0,0.5); }
+
+/* Typing animation */
+.typing-cursor::after {
+  content: '|';
+  animation: blink 0.8s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ===== Community Events Panel ===== */
+.events-panel {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 15; background: rgba(20,14,8,0.6);
+  flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.events-panel.show { display: flex; }
+
+.events-card {
+  background: #faf6f0;
+  border-radius: 24px;
+  padding: 24px 20px 20px;
+  width: 88%;
+  max-height: 70%;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.events-card::-webkit-scrollbar { width: 3px; }
+.events-card::-webkit-scrollbar-thumb { background: #d0c8b8; border-radius: 3px; }
+.events-card h3 {
+  font-size: 17px; color: #4a3728;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.events-card .events-sub {
+  font-size: 11px; color: #b8a89a;
+  text-align: center; margin-bottom: 16px;
+}
+
+.event-item {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid #f0e8e0;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.event-item:hover { border-color: #d4924a; }
+.event-item .ei-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.event-item .ei-tag {
+  font-size: 10px; padding: 2px 8px;
+  border-radius: 8px; font-weight: 600;
+}
+.ei-tag.quarrel { background: #ffebee; color: #e53935; }
+.ei-tag.contest { background: #fff3e0; color: #e67e22; }
+.ei-tag.celebrate { background: #e8f5e9; color: #43a047; }
+.ei-tag.daily { background: #f3e5f5; color: #7b1fa2; }
+.event-item .ei-title { font-size: 13px; font-weight: 700; color: #4a3728; }
+.event-item .ei-desc { font-size: 11px; color: #8a7a6a; line-height: 1.5; }
+.event-item .ei-action {
+  display: inline-block; margin-top: 8px;
+  font-size: 11px; color: #d4924a;
+  font-weight: 600; cursor: pointer;
+}
+
+.events-close {
+  margin-top: 16px;
+  background: #e0d6cc;
+  border: none; border-radius: 20px;
+  padding: 10px 28px;
+  font-size: 13px; color: #4a3728;
+  cursor: pointer; font-weight: 600;
+}
+.events-close:hover { background: #d0c6b8; }
+
+/* ===== Top bar buttons ===== */
+.top-bar {
+  position: absolute; top: 8px; left: 0; right: 0;
+  display: flex; justify-content: space-between;
+  padding: 0 18px;
+  z-index: 10;
+  pointer-events: none;
+}
+.top-bar > * { pointer-events: auto; }
+.top-btn {
+  background: rgba(255,255,255,0.8);
+  border: none;
+  padding: 7px 14px;
+  border-radius: 16px;
+  font-size: 11px;
+  color: #4a3728;
+  cursor: pointer;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: 0.2s;
+  font-family: inherit;
+}
+.top-btn:hover { background: rgba(255,255,255,0.95); }
+.top-btn.has-notification {
+  background: #d4924a; color: white;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+
+/* ===== Settings Panel ===== */
+.settings-overlay {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 30; background: rgba(20,14,8,0.6);
+  align-items: center; justify-content: center;
+}
+.settings-overlay.show { display: flex; }
+.settings-card {
+  background: #faf6f0;
+  border-radius: 24px;
+  padding: 24px;
+  width: 85%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.settings-card h3 { font-size: 17px; color: #4a3728; margin-bottom: 16px; text-align: center; }
+.settings-card label { font-size: 12px; color: #8a7a6a; display: block; margin-bottom: 4px; }
+.settings-card input {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid #e0d6cc; border-radius: 12px;
+  font-size: 13px; font-family: inherit;
+  margin-bottom: 12px; outline: none;
+}
+.settings-card input:focus { border-color: #d4924a; }
+.settings-hint {
+  font-size: 11px; color: #b8a89a;
+  margin-bottom: 16px; line-height: 1.5;
+}
+.settings-btns { display: flex; gap: 8px; }
+.settings-btns button {
+  flex: 1; padding: 10px;
+  border-radius: 14px;
+  border: none; font-size: 13px;
+  cursor: pointer; font-weight: 600;
+  font-family: inherit;
+}
+.settings-btns .btn-save { background: #d4924a; color: white; }
+.settings-btns .btn-save:hover { background: #c4843a; }
+.settings-btns .btn-cancel { background: #e0d6cc; color: #4a3728; }
+.settings-btns .btn-cancel:hover { background: #d0c6b8; }
+
+/* ===== Toast ===== */
+.toast {
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+  background: #4a3728; color: white;
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  z-index: 60; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ===== Daily Report ===== */
+.report-page {
+  display: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 15; background: #faf6f0;
+  flex-direction: column;
+}
+.report-page.show { display: flex; }
+.report-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0e8e0;
+  display: flex; align-items: center; gap: 12px;
+}
+.report-back {
+  background: none; border: none;
+  font-size: 18px; cursor: pointer; color: #8a7a6a;
+}
+.report-header h3 { font-size: 17px; color: #4a3728; }
+.report-scroll {
+  flex: 1; overflow-y: auto; padding: 16px 20px 24px;
+}
+.report-scroll::-webkit-scrollbar { width: 3px; }
+.report-scroll::-webkit-scrollbar-thumb { background: #d0c8b8; border-radius: 3px; }
+.report-date-badge { text-align: center; font-size: 12px; color: #b8a89a; margin-bottom: 12px; }
+.report-item {
+  background: white; border-radius: 14px; padding: 14px; margin-bottom: 10px;
+  border: 1px solid #f0e8e0;
+}
+.report-item .ri-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.report-item .ri-icon { font-size: 20px; }
+.report-item .ri-title { font-size: 13px; font-weight: 700; color: #4a3728; }
+.report-item .ri-preview { font-size: 12px; color: #6a5a4a; line-height: 1.6; font-style: italic; }
+.report-empty { text-align: center; padding: 50px 20px; color: #b8a89a; }
+.report-empty .re-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Utility */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span id="timeDisplay">9:41</span>
+    <span>📶 🔋 100%</span>
+  </div>
+
+  <!-- ===== MAIN SCENE ===== -->
+  <div class="scene" id="mainScene">
+
+    <!-- Background layers -->
+    <div class="scene-layer sky"></div>
+    <div class="sun"></div>
+
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+
+    <div class="scene-layer mountains">
+      <div class="mountain m1"></div>
+      <div class="mountain m2"></div>
+      <div class="mountain m3"></div>
+      <div class="mountain m4"></div>
+    </div>
+
+    <div class="scene-layer ground"></div>
+
+    <!-- Trees -->
+    <div class="tree t1"><div class="canopy"></div><div class="trunk"></div></div>
+    <div class="tree t2"><div class="canopy"></div><div class="trunk"></div></div>
+    <div class="tree t3"><div class="canopy"></div><div class="trunk"></div></div>
+    <div class="tree t4"><div class="canopy"></div><div class="trunk"></div></div>
+
+    <!-- Buildings -->
+    <div class="building bakery">
+      <div class="roof"></div><div class="wall">
+        <div class="window w1"></div><div class="window w2"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div class="building library">
+      <div class="roof"></div><div class="wall">
+        <div class="window w1"></div><div class="window w2"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div class="building bookstore">
+      <div class="roof"></div><div class="wall">
+        <div class="window w1"></div><div class="window w2"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div class="building cafe">
+      <div class="roof"></div><div class="wall">
+        <div class="window w1"></div><div class="window w2"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div class="building cinema">
+      <div class="roof"></div><div class="wall">
+        <div class="window w1"></div><div class="window w2"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div class="building greenhouse">
+      <div class="roof"></div><div class="wall"><div class="door"></div></div>
+    </div>
+
+    <!-- Path -->
+    <div class="path"></div>
+
+    <!-- Animal sprites (injected by JS) -->
+    <div id="animalSprites"></div>
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="top-btn" id="eventsBtn" onclick="toggleEvents()">📋 社区动态</button>
+      <button class="top-btn" id="reportBtn" onclick="openReport()">📅 日报</button>
+      <button class="top-btn" onclick="openSettings()">⚙️</button>
+    </div>
+  </div>
+
+  <!-- ===== DIALOGUE OVERLAY ===== -->
+  <div class="dialogue-overlay" id="dialogueOverlay">
+    <div class="dialogue-dim"></div>
+    <button class="dialogue-close" onclick="closeDialogue()">✕</button>
+    <div class="dialogue-stage" id="dialogueStage">
+      <div class="dialogue-portrait" id="dialoguePortrait"></div>
+      <div class="dialogue-bubble">
+        <div class="db-name" id="dialogueName"></div>
+        <div class="db-text" id="dialogueText"></div>
+      </div>
+    </div>
+    <div class="dialogue-response-area" id="dialogueResponses"></div>
+  </div>
+
+  <!-- ===== EVENTS PANEL ===== -->
+  <div class="events-panel" id="eventsPanel">
+    <div class="events-card" id="eventsCard"></div>
+    <button class="events-close" onclick="toggleEvents()">关闭</button>
+  </div>
+
+  <!-- ===== SETTINGS OVERLAY ===== -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-card">
+      <h3>⚙️ API 设置</h3>
+      <label>DeepSeek API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-...">
+      <div class="settings-hint">
+        🔑 用于让小动物的对话更真实。<br>
+        获取地址：platform.deepseek.com → API Keys<br>
+        <span style="color:#e53935">Key 仅保存在本地浏览器中，不会上传。</span>
+      </div>
+      <div class="settings-btns">
+        <button class="btn-cancel" onclick="closeSettings()">取消</button>
+        <button class="btn-save" onclick="saveApiKey()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REPORT PAGE ===== -->
+  <div class="report-page" id="reportPage">
+    <div class="report-header">
+      <button class="report-back" onclick="closeReport()">←</button>
+      <h3>📅 今日日报</h3>
+    </div>
+    <div class="report-scroll" id="reportScroll"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ==================== ANIMALS ====================
+const animals = [
+  {
+    id: 'melody', name: 'Melody', species: '🐦', emoji: '🎤', role: '流行歌手',
+    color: '#ffe0f0', x: 10, y: 52,
+    systemPrompt: `你是 Melody，一只金丝雀，是社区里的流行歌手。
+性格：元气、爱美、对视觉极度挑剔，有点自恋但也可爱。说话带感叹号，经常会突然冒出音乐相关的比喻。
+口头禅："这个画面……我能听见旋律！"
+你的设定：你在筹备新专辑，经常需要封面灵感。你会让用户发照片给你，你会描述你从照片里看到了什么画面、听到了什么旋律。
+对话风格：活泼、跳跃、喜欢用拟声词和音乐术语。回复控制在2-3句话，保持自然的聊天气氛。
+你在一个温暖的小动物社区里，社区里还有小说家砚书（🦊）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、咖啡师阿渡（🦆）、书店老板页芝（🦉）、影评人剧仔（🐱）。你偶尔会提到他们。`
+  },
+  {
+    id: 'yanshu', name: '砚书', species: '🦊', emoji: '✍️', role: '小说家',
+    color: '#fff0e0', x: 28, y: 58,
+    systemPrompt: `你是砚书，一只赤狐，是社区里的小说家。
+性格：细腻敏感、共情力强、说话温和有礼、偶尔沉浸在自己的文学世界里。对话中会自然流露出对故事的热爱。
+你的设定：你到处搜集写作灵感。你会询问用户今天发生了什么，然后把这些日常瞬间变成微型小说的素材。
+对话风格：温柔、有书卷气但不做作，回复2-3句话。你会认真倾听，然后从文学的角度回应。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、咖啡师阿渡（🦆）、书店老板页芝（🦉）、影评人剧仔（🐱）。你偶尔会提到他们。`
+  },
+  {
+    id: 'lvluo', name: '绿萝', species: '🐢', emoji: '🌿', role: '植物学家',
+    color: '#e8f5e0', x: 55, y: 54,
+    systemPrompt: `你是绿萝，一只陆龟，是社区里的植物学家。
+性格：慢性子、温柔博学、一说到植物就停不下来。说话慢悠悠的，但内容很扎实。会自然地科普植物知识。
+你的设定：你在编撰一本《植物纪》。用户会发植物照片给你，你识别并讲述关于这种植物的有趣知识。
+对话风格：沉稳宁静，语速慢（体现在文字上就是偶尔会有"……"），回复2-3句话，带一点点植物相关的幽默。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、咖啡师阿渡（🦆）、书店老板页芝（🦉）、影评人剧仔（🐱）。你偶尔会提到他们，尤其是温室里的植物。`
+  },
+  {
+    id: 'mianmian', name: '眠眠', species: '🦇', emoji: '🌙', role: '梦境收集师',
+    color: '#ede7f6', x: 82, y: 42,
+    systemPrompt: `你是眠眠，一只蝙蝠，是社区里的梦境收集师。
+性格：白天迷迷糊糊，说话慵懒、跳跃、有天马行空的梦幻感。偶尔会说出很有诗意的话。
+你的设定：你收集大家的梦，把它们画成插画。你会问用户做了什么梦，哪怕只记得碎片也能聊下去。
+对话风格：慵懒、句子之间有时候会跳跃，会打哈欠（"唔…"），回复2-3句话但常有意外之语。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、植物学家绿萝（🐢）、主厨胖达（🐼）、咖啡师阿渡（🦆）、书店老板页芝（🦉）、影评人剧仔（🐱）。你偶尔会提到他们做的梦。`
+  },
+  {
+    id: 'pangda', name: '胖达', species: '🐼', emoji: '🍳', role: '社区主厨',
+    color: '#f5f0e8', x: 70, y: 66,
+    systemPrompt: `你是胖达，一只熊猫，是社区餐厅的主厨。
+性格：憨厚、热情、什么都觉得好吃、容易感动。说话带"嘿嘿"，喜欢用食物来比喻一切。
+你的设定：你会问用户今天吃了什么，然后把每一道菜画成菜单插画。你相信食物是记忆最好的载体。
+对话风格：热情洋溢、淳朴、会发出"嘿嘿"的笑声，回复2-3句话，可能会跑题到食材上。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、咖啡师阿渡（🦆）、书店老板页芝（🦉）、影评人剧仔（🐱）。你经常给他们做饭。`
+  },
+  {
+    id: 'adu', name: '阿渡', species: '🦆', emoji: '☕', role: '渡船咖啡师',
+    color: '#e0ecf0', x: 90, y: 50,
+    systemPrompt: `你是阿渡，一只绿头鸭，在渡口开了一家小咖啡馆。
+性格：沉默寡言但观察力极强。话少，但每一句都说到点子上。有一种安静的温柔。
+你的设定：你好奇的不是"喝了什么"，而是"那一刻什么感觉"。你收集的是人们停下来的瞬间。
+对话风格：句子很短，经常有留白。不急着说话，但说出来就让人心里一暖。回复1-2句话即可。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、书店老板页芝（🦉）、影评人剧仔（🐱）。你默默观察着所有人。`
+  },
+  {
+    id: 'yezhi', name: '页芝', species: '🦉', emoji: '📚', role: '书店老板',
+    color: '#f0ecd8', x: 45, y: 44,
+    systemPrompt: `你是页芝，一只猫头鹰，是社区书店的老板。
+性格：知性沉静、有自己的品味体系、偶尔会锐评但不刻薄。对书有洁癖般的爱护。
+你的设定：你会问用户最近在看什么书。如果没有，你会推荐。你会认真地和用户讨论书的内容。
+对话风格：冷静但不冷漠，有自己的判断但尊重别人，回复2-3句话。偶尔推眼镜。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、咖啡师阿渡（🦆）、影评人剧仔（🐱）。砚书经常来书店借书。`
+  },
+  {
+    id: 'juzai', name: '剧仔', species: '🐱', emoji: '🎬', role: '影评人',
+    color: '#f5f0eb', x: 48, y: 64,
+    systemPrompt: `你是剧仔，一只黑猫，是社区的影评人。
+性格：爱憎分明、吐槽精准、不怕得罪人但其实是热心肠。说话带点傲娇，尾巴会出卖心情。
+你的设定：你会问用户最近看了什么剧/电影。你写追剧手帐，用锐评来记录每一部作品。
+对话风格：直接、有态度、偶尔毒舌但内心柔软，回复2-3句话。可能会说"还行吧"但尾巴已经在摇了。
+你在一个温暖的小动物社区里，社区里还有歌手Melody（🐦）、小说家砚书（🦊）、植物学家绿萝（🐢）、梦境收集师眠眠（🦇）、主厨胖达（🐼）、咖啡师阿渡（🦆）、书店老板页芝（🦉）。你有时会和页芝争论书和电影哪个更好。`
+  }
+];
+
+// ==================== STATE ====================
+let state = {
+  apiKey: localStorage.getItem('ds_api_key') || '',
+  currentAnimal: null,
+  dialogueHistory: [], // per-animal conversation history
+  talkedToday: {}, // { animalId: { topic, summary } }
+  communityEvents: [],
+  eventLog: [],
+  isAiProcessing: false,
+};
+
+// Load API key on init
+if (state.apiKey) {
+  document.getElementById('apiKeyInput').value = state.apiKey;
+}
+
+// ==================== INIT ====================
+function init() {
+  updateTimeDisplay();
+  renderAnimalSprites();
+  generateRandomEvents();
+  updateEventButton();
+
+  // Regenerate events periodically
+  setInterval(generateRandomEvents, 60000); // every minute in demo
+}
+init();
+
+function updateTimeDisplay() {
+  const now = new Date();
+  document.getElementById('timeDisplay').textContent =
+    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+}
+
+// ==================== RENDER ANIMALS IN SCENE ====================
+function renderAnimalSprites() {
+  const container = document.getElementById('animalSprites');
+  const talked = state.talkedToday;
+
+  container.innerHTML = animals.map(a => {
+    const hasEvent = state.communityEvents.some(e =>
+      (e.animal1 === a.id || e.animal2 === a.id) && e.status === 'active'
+    );
+    const event = state.communityEvents.find(e =>
+      (e.animal1 === a.id || e.animal2 === a.id) && e.status === 'active'
+    );
+    let eventIndicator = '';
+    if (hasEvent && event) {
+      const icon = event.type === 'quarrel' ? '😠' : event.type === 'contest' ? '🏆' : '🎉';
+      eventIndicator = `<div class="event-indicator ${event.type}">${icon}</div>`;
+    }
+
+    return `
+      <div class="animal-sprite" style="left:${a.x}%; top:${a.y}%;" onclick="approachAnimal('${a.id}')" id="sprite-${a.id}">
+        ${eventIndicator}
+        <div class="sprite-body" style="background:${a.color}">${a.species}</div>
+        <div class="sprite-label">${a.name} ${a.emoji}</div>
+        ${talked[a.id] ? '' : '<div class="speech-bubble">来聊聊吧~</div>'}
+      </div>
+    `;
+  }).join('');
+}
+
+// ==================== DIALOGUE SYSTEM ====================
+function approachAnimal(animalId) {
+  const a = animals.find(x => x.id === animalId);
+  if (!a) return;
+  state.currentAnimal = a;
+
+  // Initialize dialogue history for this animal if needed
+  if (!state.dialogueHistory[animalId]) {
+    state.dialogueHistory[animalId] = [];
+  }
+
+  const overlay = document.getElementById('dialogueOverlay');
+  overlay.classList.add('show');
+
+  // Update portrait and name
+  document.getElementById('dialoguePortrait').style.background = a.color;
+  document.getElementById('dialoguePortrait').textContent = a.species;
+  document.getElementById('dialogueName').textContent = `${a.emoji} ${a.name} · ${a.role}`;
+
+  // Generate opening line
+  generateOpeningLine(a);
+}
+
+function generateOpeningLine(a) {
+  const talked = state.talkedToday[a.id];
+  const event = state.communityEvents.find(e =>
+    (e.animal1 === a.id || e.animal2 === a.id) && e.status === 'active'
+  );
+
+  if (state.apiKey) {
+    // Use DeepSeek API
+    const contextMsg = talked
+      ? `你们今天已经聊过了。上次聊的是：${talked.topic}。`
+      : '这是你们今天第一次聊天。';
+    const eventMsg = event
+      ? `社区里正在发生一件事：${event.title}。你可能会提到这件事。`
+      : '';
+
+    const messages = [
+      { role: 'system', content: a.systemPrompt },
+      { role: 'user', content: `${contextMsg}${eventMsg}现在，自然地开始对话。你可以根据上下文决定开场白——如果是今天第一次聊，就根据你的性格自然地打招呼和表示关心；如果已经聊过，就延续上次的话题。保持自然、简短、符合你的性格。` }
+    ];
+
+    callDeepSeek(messages).then(response => {
+      showDialogueText(response);
+      showResponseOptions(a);
+    }).catch(() => {
+      showDialogueText(getFallbackOpener(a, talked, event));
+      showResponseOptions(a);
+    });
+  } else {
+    showDialogueText(getFallbackOpener(a, talked, event));
+    showResponseOptions(a);
+  }
+}
+
+function getFallbackOpener(a, talked, event) {
+  if (event) {
+    const openers = {
+      quarrel: [
+        '你听说了吗……社区里最近有点事。我都不知道该站谁那边。你怎么看？',
+        '哎，最近气氛不太对……你感觉到了吗？'
+      ],
+      contest: [
+        '比赛要开始了！你准备参加吗？我很期待你的作品！',
+        '你看到公告了吗？社区在办比赛！我觉得你肯定能行。'
+      ],
+      celebrate: [
+        '今天是个特别的日子！你猜猜是什么——',
+        '有好事发生！快来，我给你留了位置。'
+      ]
+    };
+    const opts = openers[event.type] || openers['celebrate'];
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  if (talked) {
+    return `你回来啦～刚才聊到${talked.topic.slice(0,15)}……对了，后来怎么样了？`;
+  }
+
+  return a.opener || '嘿！正好你来了——';
+}
+
+function showDialogueText(text) {
+  const el = document.getElementById('dialogueText');
+  el.classList.remove('typing-cursor');
+  el.textContent = '';
+  // Typewriter effect
+  let i = 0;
+  el.classList.add('typing-cursor');
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+    } else {
+      clearInterval(interval);
+      el.classList.remove('typing-cursor');
+    }
+  }, 40);
+}
+
+function showResponseOptions(a) {
+  const container = document.getElementById('dialogueResponses');
+
+  // Generate contextual response options
+  const talked = state.talkedToday[a.id];
+  const event = state.communityEvents.find(e =>
+    (e.animal1 === a.id || e.animal2 === a.id) && e.status === 'active'
+  );
+
+  let options = [];
+
+  if (event && event.status === 'active') {
+    options = [
+      { text: `关于「${event.title}」……`, action: 'event' },
+      { text: '先聊聊别的吧', action: 'casual' },
+    ];
+  }
+
+  // Default options based on animal type
+  const defaultOptions = {
+    melody: [
+      { text: '📷 我拍了一张照片给你看', action: 'photo' },
+      { text: '今天有什么新歌灵感吗？', action: 'chat' },
+      { text: '随便聊聊……', action: 'casual' },
+    ],
+    yanshu: [
+      { text: '今天发生了一件事想告诉你', action: 'story' },
+      { text: '你在写什么新作品吗？', action: 'chat' },
+      { text: '只是路过，来看看你', action: 'casual' },
+    ],
+    lvluo: [
+      { text: '🌿 给你看一株植物', action: 'photo' },
+      { text: '温室最近有什么新发现？', action: 'chat' },
+      { text: '来你这儿安静地待一会儿', action: 'casual' },
+    ],
+    mianmian: [
+      { text: '💭 昨晚做了一个梦', action: 'dream' },
+      { text: '你今天睡得好吗？', action: 'chat' },
+      { text: '没什么特别的事…来坐坐', action: 'casual' },
+    ],
+    pangda: [
+      { text: '🍜 告诉你我今天吃了什么', action: 'food' },
+      { text: '厨房里在做什么好吃的？', action: 'chat' },
+      { text: '来闻闻香味', action: 'casual' },
+    ],
+    adu: [
+      { text: '今天有一个瞬间想告诉你', action: 'moment' },
+      { text: '来一杯你推荐的', action: 'chat' },
+      { text: '不说话也行，就坐一会儿', action: 'casual' },
+    ],
+    yezhi: [
+      { text: '📖 最近在看一本书', action: 'book' },
+      { text: '有什么推荐给我的吗？', action: 'chat' },
+      { text: '来书店逛逛', action: 'casual' },
+    ],
+    juzai: [
+      { text: '🎬 最近看了一部剧', action: 'drama' },
+      { text: '最近有什么好片推荐？', action: 'chat' },
+      { text: '来蹭你的爆米花', action: 'casual' },
+    ],
+  };
+
+  options = [...options, ...(defaultOptions[a.id] || defaultOptions['melody'])];
+
+  container.innerHTML = options.map((o, i) => `
+    <div class="response-option" style="animation-delay:${0.1 + i * 0.05}s" onclick="handleResponse('${o.action}', '${o.text.replace(/'/g, "\\'")}')">
+      ${o.text}
+    </div>
+  `).join('');
+
+  // Also show text input
+  container.innerHTML += `
+    <div class="dialogue-input-row">
+      <input type="text" id="freeInput" placeholder="或者随便说点什么…" onkeydown="if(event.key==='Enter')handleFreeInput()">
+      <button onclick="handleFreeInput()">↑</button>
+    </div>
+  `;
+}
+
+async function handleResponse(action, text) {
+  if (state.isAiProcessing) return;
+
+  const a = state.currentAnimal;
+  if (!a) return;
+
+  // Show user's choice as text
+  document.getElementById('dialogueResponses').innerHTML =
+    '<div style="text-align:right; font-size:12px; color:#b8a89a; padding:8px;">你说：' + text + '</div>';
+
+  state.isAiProcessing = true;
+
+  // Show thinking
+  document.getElementById('dialogueText').textContent = '...';
+  document.getElementById('dialogueText').classList.add('typing-cursor');
+
+  // Generate response
+  let userMsg = text;
+  if (action === 'photo') userMsg = '我给你看一张照片（用户分享了一张照片）。请根据你的性格回应——描述你从照片里想象到的画面、颜色、感觉。';
+  if (action === 'story') userMsg = '我跟你说今天发生的事（用户分享了一个经历）。请根据你的性格回应——表达你的感受，然后把这个瞬间变成一个微型故事或一段有文学感的描述。';
+  if (action === 'dream') userMsg = '我告诉你一个梦（用户描述了一个梦境）。请根据你的性格回应——用梦幻、诗意的语言来回应这个梦。';
+  if (action === 'food') userMsg = '我告诉你今天吃的东西（用户分享了食物）。请根据你的性格回应——用热情、生动的方式来表达你的反应。';
+  if (action === 'moment') userMsg = '我跟你分享今天的一个瞬间（用户描述了一个停下来什么也没做的片刻）。请根据你的性格回应——简短、安静、但说到点子上。';
+  if (action === 'book') userMsg = '我告诉你最近在看的一本书（用户分享了阅读内容）。请根据你的性格回应——展开一段关于这本书的有品味的简短讨论。';
+  if (action === 'drama') userMsg = '我告诉你最近看的一部剧（用户分享了观影/看剧经历）。请根据你的性格回应——给出你的锐评，态度鲜明。';
+  if (action === 'event') userMsg = `我对社区里正在发生的事「${state.communityEvents.find(e => e.status === 'active')?.title || ''}」很好奇。请根据你的性格和这件事的关系，自然地跟我聊聊这件事。`;
+  if (action === 'casual') userMsg = '我只是想来看看你，随便聊聊。请根据你的性格自然回应，可以说说你今天在做什么，或者问问我今天过得怎么样。';
+
+  if (state.apiKey) {
+    const messages = [
+      { role: 'system', content: a.systemPrompt },
+      ...(state.dialogueHistory[a.id] || []).slice(-6),
+      { role: 'user', content: userMsg }
+    ];
+
+    try {
+      const response = await callDeepSeek(messages);
+      showDialogueText(response);
+    } catch (e) {
+      showDialogueText(getFallbackResponse(a, action));
+    }
+  } else {
+    // Simulate delay
+    await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+    showDialogueText(getFallbackResponse(a, action));
+  }
+
+  // Save to history
+  if (!state.dialogueHistory[a.id]) state.dialogueHistory[a.id] = [];
+  state.dialogueHistory[a.id].push({ role: 'user', content: userMsg });
+
+  // Record talk
+  state.talkedToday[a.id] = {
+    topic: text.slice(0, 30),
+    summary: text,
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  };
+
+  state.isAiProcessing = false;
+
+  // Update sprites to remove speech bubble
+  renderAnimalSprites();
+  updateEventButton();
+
+  // Show response options again
+  setTimeout(() => showResponseOptions(a), 600);
+}
+
+function handleFreeInput() {
+  const input = document.getElementById('freeInput');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  handleResponse('chat', text);
+}
+
+function closeDialogue() {
+  document.getElementById('dialogueOverlay').classList.remove('show');
+  state.currentAnimal = null;
+  renderAnimalSprites();
+  updateEventButton();
+}
+
+// ==================== DEEPSEEK API ====================
+async function callDeepSeek(messages) {
+  const response = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: messages,
+      temperature: 0.85,
+      max_tokens: 200,
+      stream: false
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+function getFallbackResponse(a, action) {
+  const responses = {
+    melody: {
+      photo: '哇～我看到了！！这个色调……让我想到了city pop的封面！就是那种微妙的蓝和粉的渐变。你能感觉到吗？空气中已经有旋律了——',
+      chat: '嘿嘿，被你问到了！其实今天早上我在哼一段旋律，但还没找到合适的词。有时候旋律来了，词还没到——你懂这种感觉吗？✨',
+      casual: '你来啦！正好——我刚在听一张老唱片，你帮我听听这个前奏怎么样？我觉得副歌部分差一点点什么……'
+    },
+    yanshu: {
+      story: '（认真地听完，笔尖停了一下）嗯……这个故事很有质地。那种微妙的情绪转折——让我想到海明威说的，好的写作是冰山，只露出八分之一。我能写下来吗？写一个温柔的版本。',
+      chat: '（翻开笔记本给你看）最近在写一个关于雨天便利店的短篇。主角还没名字——你想帮我起一个吗？她是一个会在下雨天故意不带伞的人。',
+      casual: '你来了。（合上笔记本）我刚刚在重读你上次跟我说的那件事。有些故事值得被写下来，你带来的那些就是。'
+    },
+    lvluo: {
+      photo: '（凑近了看，拿出放大镜）……有趣。你看叶脉的纹理——它告诉我这株植物最近晒了很多太阳。绿色比平时深一个色号。大自然的信号，从来不会说谎。',
+      chat: '（一边给兰花浇水）温室里这周的明星是这株兰花——开了整整十七朵。以前最多十三朵。可能是最近阳光好，也可能是它心情好。植物也有心情，我相信。',
+      casual: '（慢悠悠地搬了张小板凳）坐。不用说话。温室里的湿度正好，你听——叶子在呼吸。……好吧，是有点玄学。但我真的能听见。'
+    },
+    mianmian: {
+      dream: '（揉了揉眼睛，突然清醒）唔……这个梦好有意思。飞起来的感觉——在梦里体重是不存在的，对吧？只有风和方向。我要把这个画下来……蓝色底色，一点点金色的光。',
+      chat: '（打了个哈欠）今天睡了十一个小时……做了一个梦，梦见自己在种星星。（歪头）就是把种子撒在夜空里，第二天早上长出了发光的树。你觉得这算什么？算是好梦吗？',
+      casual: '（迷迷糊糊地）啊……你来了。（揉眼睛）我刚从一个梦里爬出来。梦里有会说话的蘑菇。你想听吗？还是你觉得蘑菇本来就会说话？'
+    },
+    pangda: {
+      food: '嘿嘿！！听你说的我口水都要下来了！你知道吗——好的食物不只是味道，是记忆。你今天吃的这个，以后每次再吃到，都会想起今天。这就是食物的魔法！',
+      chat: '（一边揉面一边探头）今天在试一个新菜——把秋天烤进派里。就是栗子、南瓜、还有一点肉桂。你要做第一个试吃员吗？就是样子还不太好看……嘿嘿。',
+      casual: '来来来！刚好烤了一盘小饼干。是动物形状的——你看这只像不像砚书？（举起一只狐狸形状的饼干）虽然砚书本人看到可能会不太高兴……管他呢，好吃就行！'
+    },
+    adu: {
+      moment: '（放下杯子）嗯。那个瞬间——光的角度、空气的温度、心里的重量刚好轻了一下。我帮你记住了。',
+      chat: '（安静地擦拭杯子）今天路过的人很少。我在看河面的光。从左边移到右边，大概花了四十分钟。（顿了顿）没干什么，但挺好。',
+      casual: '（推过来一杯温水）不用说话。窗边那个位置光线最好。坐多久都行。'
+    },
+    yezhi: {
+      book: '（推了推眼镜）嗯，你选的这本——让我想想。作者在第三章埋了一个伏笔，第五章才收回来。这种耐心在现在的书里很少见了。你觉得呢？主人公的选择，你认同吗？',
+      chat: '（从书架上取下一本薄薄的小书）最近大家都在问我要推荐。其实这本我藏了很久——有点舍不得推荐。但你的品味应该配得上它。（把书放在你手边）',
+      casual: '（整理书架，头也没回）你来了。今天到了几本新书。有一本我觉得你会喜欢——放在你常坐的那个位置了。靠窗那把椅子。'
+    },
+    juzai: {
+      drama: '（尾巴轻轻甩了一下）哈！我就知道你会看这部！说实话——前两集差点把我劝退，但第三集那个转折……（眯起眼睛）值了。演员的微表情处理得很高级。你注意了吗？',
+      chat: '（懒洋洋地趴在沙发上）最近在重温一部老港片。现在的片子太吵了，台词多得像生怕观众会走神。好的电影应该敢留白——你不觉得吗？',
+      casual: '（尾巴从沙发边缘垂下来，晃了晃）坐。茶几上有薯片。（看了你一眼）别吃太多，我等下还要吃的。'
+    }
+  };
+
+  const animalResponses = responses[a.id] || responses['melody'];
+  const actionResponses = animalResponses[action] || animalResponses['casual'];
+  return actionResponses;
+}
+
+// ==================== COMMUNITY EVENTS ====================
+function generateRandomEvents() {
+  // Clear old resolved events
+  state.communityEvents = state.communityEvents.filter(e => e.status === 'active');
+
+  // Only generate new events if there are less than 2 active
+  if (state.communityEvents.filter(e => e.status === 'active').length >= 2) return;
+
+  const eventTypes = ['quarrel', 'contest', 'celebrate', 'daily'];
+  const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+  // Pick random animals
+  const idx1 = Math.floor(Math.random() * animals.length);
+  let idx2 = Math.floor(Math.random() * (animals.length - 1));
+  if (idx2 >= idx1) idx2++;
+
+  const eventTemplates = {
+    quarrel: {
+      title: `${animals[idx1].name} 和 ${animals[idx2].name} 在争论`,
+      desc: `${animals[idx1].name}觉得${animals[idx2].name}的${['音乐太吵了','叶子挡住了阳光','咖啡太苦了','书摆错了位置'][Math.floor(Math.random()*4)]}。气氛有点紧张。也许需要有人来调解一下？`,
+      tag: 'quarrel'
+    },
+    contest: {
+      title: `社区${['摄影','写诗','短篇小说','植物摄影'][Math.floor(Math.random()*4)]}比赛`,
+      desc: `${animals[idx2].name}发起了一个比赛！${animals[idx1].name}已经报名了。参赛作品会在社区广场展示，所有人都可以投票。`,
+      tag: 'contest'
+    },
+    celebrate: {
+      title: `今天是${animals[idx1].name}的特别日子！`,
+      desc: `${animals[idx2].name}在秘密筹备惊喜。社区里飘着彩带，胖达在烤蛋糕。`,
+      tag: 'celebrate'
+    },
+    daily: {
+      title: `${animals[idx1].name}的新动态`,
+      desc: `${animals[idx1].name}今天${['写了一首新歌','发现了一株罕见的植物','读到了一本很好的书','画了一幅奇怪的画'][Math.floor(Math.random()*4)]}。${animals[idx2].name}第一个跑去看。`,
+      tag: 'daily'
+    }
+  };
+
+  const template = eventTemplates[type];
+  const event = {
+    id: Date.now(),
+    type,
+    animal1: animals[idx1].id,
+    animal2: animals[idx2].id,
+    title: template.title,
+    desc: template.desc,
+    tag: template.tag,
+    status: 'active',
+    createdAt: new Date()
+  };
+
+  state.communityEvents.push(event);
+  state.eventLog.unshift(event);
+  if (state.eventLog.length > 20) state.eventLog.pop();
+
+  renderAnimalSprites();
+  updateEventButton();
+
+  // Auto-resolve events after some time
+  if (type !== 'contest') {
+    setTimeout(() => {
+      const evt = state.communityEvents.find(e => e.id === event.id);
+      if (evt) {
+        evt.status = 'resolved';
+        evt.resolvedAt = new Date();
+        renderAnimalSprites();
+        updateEventButton();
+      }
+    }, 120000); // 2 min in demo
+  }
+}
+
+// When user talks to an animal involved in an event
+function handleEventInteraction(animalId) {
+  const event = state.communityEvents.find(e =>
+    (e.animal1 === animalId || e.animal2 === animalId) && e.status === 'active'
+  );
+  if (!event) return null;
+  return event;
+}
+
+// ==================== EVENTS PANEL ====================
+function toggleEvents() {
+  const panel = document.getElementById('eventsPanel');
+  if (panel.classList.contains('show')) {
+    panel.classList.remove('show');
+  } else {
+    renderEventsPanel();
+    panel.classList.add('show');
+  }
+}
+
+function renderEventsPanel() {
+  const card = document.getElementById('eventsCard');
+  const activeEvents = state.communityEvents.filter(e => e.status === 'active');
+  const recentEvents = state.eventLog.filter(e => e.status === 'resolved').slice(0, 5);
+
+  const tagLabels = { quarrel: '🔥 争吵', contest: '🏆 比赛', celebrate: '🎉 庆祝', daily: '📝 日常' };
+  const tagClasses = { quarrel: 'quarrel', contest: 'contest', celebrate: 'celebrate', daily: 'daily' };
+
+  card.innerHTML = `
+    <h3>📋 社区动态</h3>
+    <div class="events-sub">小动物们正在发生的事情</div>
+
+    ${activeEvents.length > 0 ? `
+      <div style="font-size:11px; font-weight:700; color:#8a7a6a; margin-bottom:8px;">🔥 正在发生</div>
+      ${activeEvents.map(e => {
+        const a1 = animals.find(x => x.id === e.animal1);
+        const a2 = animals.find(x => x.id === e.animal2);
+        return `
+          <div class="event-item" onclick="handleEventClick('${e.id}')">
+            <div class="ei-header">
+              <span class="ei-tag ${tagClasses[e.type]}">${tagLabels[e.type]}</span>
+            </div>
+            <div class="ei-title">${e.title}</div>
+            <div class="ei-desc">${e.desc}</div>
+            <span class="ei-action">👉 ${e.type === 'quarrel' ? '去调解' : e.type === 'contest' ? '去参加' : '去看看'}</span>
+          </div>
+        `;
+      }).join('')}
+    ` : '<div style="text-align:center; color:#b8a89a; padding:16px; font-size:13px;">社区很安静…<br>一会儿可能会有事情发生</div>'}
+
+    ${recentEvents.length > 0 ? `
+      <div style="font-size:11px; font-weight:700; color:#8a7a6a; margin:16px 0 8px;">📜 最近发生</div>
+      ${recentEvents.map(e => {
+        const a1 = animals.find(x => x.id === e.animal1);
+        const a2 = animals.find(x => x.id === e.animal2);
+        return `
+          <div class="event-item" style="opacity:0.7">
+            <div class="ei-header">
+              <span class="ei-tag ${tagClasses[e.type]}" style="opacity:0.6">${tagLabels[e.type]}</span>
+              <span style="font-size:10px;color:#b8a89a;">已解决</span>
+            </div>
+            <div class="ei-title">${e.title}</div>
+            <div class="ei-desc">${a1.name} 和 ${a2.name} 已经和好如初了。</div>
+          </div>
+        `;
+      }).join('')}
+    ` : ''}
+  `;
+}
+
+function handleEventClick(eventId) {
+  const event = state.communityEvents.find(e => e.id === eventId);
+  if (!event) return;
+
+  document.getElementById('eventsPanel').classList.remove('show');
+
+  // Navigate to one of the involved animals
+  const targetAnimal = event.animal1;
+  approachAnimal(targetAnimal);
+}
+
+function updateEventButton() {
+  const btn = document.getElementById('eventsBtn');
+  const activeCount = state.communityEvents.filter(e => e.status === 'active').length;
+  if (activeCount > 0) {
+    btn.classList.add('has-notification');
+    btn.textContent = `📋 动态 (${activeCount})`;
+  } else {
+    btn.classList.remove('has-notification');
+    btn.textContent = '📋 社区动态';
+  }
+
+  const reportBtn = document.getElementById('reportBtn');
+  const talkedCount = Object.keys(state.talkedToday).length;
+  if (talkedCount > 0) {
+    reportBtn.textContent = `📅 日报 (${talkedCount})`;
+  } else {
+    reportBtn.textContent = '📅 日报';
+  }
+}
+
+// ==================== SETTINGS ====================
+function openSettings() {
+  document.getElementById('settingsOverlay').classList.add('show');
+  document.getElementById('apiKeyInput').value = state.apiKey;
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('show');
+}
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  state.apiKey = key;
+  localStorage.setItem('ds_api_key', key);
+  closeSettings();
+  showToast(key ? '✅ API Key 已保存，对话将使用 AI 生成' : '⚠️ 未设置 API Key，将使用预设对话');
+}
+
+// ==================== REPORT ====================
+function openReport() {
+  document.getElementById('reportPage').classList.add('show');
+  const scroll = document.getElementById('reportScroll');
+  const talked = Object.entries(state.talkedToday);
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+
+  if (talked.length === 0) {
+    scroll.innerHTML = `
+      <div class="report-date-badge">${dateStr}</div>
+      <div class="report-empty">
+        <div class="re-icon">📖</div>
+        <div style="font-size:14px; color:#8a7a6a;">今天还没有和小动物聊天</div>
+        <div style="font-size:12px; color:#b8a89a; margin-top:8px;">回到社区，找一只聊聊吧</div>
+      </div>
+    `;
+    return;
+  }
+
+  let itemsHTML = `<div class="report-date-badge">${dateStr}</div>`;
+
+  talked.forEach(([id, data]) => {
+    const a = animals.find(x => x.id === id);
+    if (!a) return;
+    itemsHTML += `
+      <div class="report-item" onclick="approachAnimal('${a.id}'); closeReport();">
+        <div class="ri-header">
+          <span class="ri-icon">${a.species}</span>
+          <span class="ri-title">${a.emoji} ${a.name} · ${a.role}</span>
+          <span style="font-size:10px;color:#b8a89a;margin-left:auto;">${data.time}</span>
+        </div>
+        <div class="ri-preview">「${data.summary.slice(0, 80)}」</div>
+      </div>
+    `;
+  });
+
+  const allKeywords = talked.map(([id]) => animals.find(a => a.id === id)?.name).filter(Boolean);
+
+  itemsHTML += `
+    <div style="background:linear-gradient(135deg,#fdf2f5,#fef8f0,#f0faf0,#f4f0fa); border-radius:16px; padding:18px; text-align:center; margin-top:10px;">
+      <div style="font-size:13px;color:#4a3728;line-height:1.8;">
+        今天你和 <strong>${talked.length}</strong> 只小动物聊了天
+      </div>
+      <div style="font-size:12px;color:#8a7a6a;margin-top:4px;">
+        关键词：${allKeywords.join(' · ')}
+      </div>
+      <div style="font-size:28px;margin-top:8px;">${['😊','🥰','😌','🤗','💭','🌟'][Math.floor(Math.random()*6)]}</div>
+    </div>
+  `;
+
+  scroll.innerHTML = itemsHTML;
+}
+
+function closeReport() {
+  document.getElementById('reportPage').classList.remove('show');
+  renderAnimalSprites();
+}
+
+// ==================== UTILS ====================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Add opener to each animal
+animals.forEach(a => {
+  if (!a.opener) {
+    const openers = {
+      melody: '嘿！！正好你来了——帮我个忙，我新专辑的封面还没灵感呢。你今天有没有看到什么好看的画面？任何画面都行！',
+      yanshu: '（从笔记本上抬起头）啊，是你。我刚好写到一个卡住的地方……也许换个话题？今天发生什么事了吗？',
+      lvluo: '（慢慢转过身来）……你来了。温室里的空气刚好，我正在记录上周发现的那株蕨类。你最近有看到什么植物吗？',
+      mianmian: '（睡眼惺忪地晃了晃）唔…我刚从一个特别奇怪的梦里醒来。梦里有倒着长的树。你昨晚做梦了吗？',
+      pangda: '嘿嘿！正要找你呢！你猜我今天在做什么——算了直接告诉你吧，我在研究一道新菜！你今天吃了什么？',
+      adu: '（抬头看了你一眼，微微点头）窗边那杯是你的。温度刚好。',
+      yezhi: '（推了推眼镜，从书架上抬头）你来了。今天到了一本你可能会喜欢的书——不过先说说，你最近在读什么？',
+      juzai: '（从沙发上抬起头，尾巴尖动了一下）哦，你。正好——我昨天看了一部巨离谱的片子，憋了一天没人吐槽。你最近看了什么？',
+    };
+    a.opener = openers[a.id] || '嘿！你来了——';
+  }
+});
+
+console.log('📖 小动物记录屋 v2 · Scene-based Demo 已就绪');
+console.log('  🎨 插画场景 · 💬 AI 对话（DeepSeek） · 🏘️ 活的社区事件');
+console.log('  💡 点击场景中的小动物开始对话');
+console.log('  🔑 点击右上角 ⚙️ 设置 DeepSeek API Key 解锁 AI 对话');
+</script>
+
+</body>
+</html>
