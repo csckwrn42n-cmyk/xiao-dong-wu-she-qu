@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>🐾 小动物社区</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
@@ -1076,6 +1080,13 @@ console.log('🐾 小动物社区 v1.0 - 双模式 Demo');
 console.log('🌿 外出模式：点击小动物完成心愿');
 console.log('🏠 在家模式：点击屋里的小动物聊天');
 console.log('📋 圈子：查看社区动态');
+
+// ===== PWA: Register Service Worker =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js');
+  });
+}
 </script>
 </body>
 </html>
