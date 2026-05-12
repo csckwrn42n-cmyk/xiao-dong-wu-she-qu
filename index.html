@@ -780,6 +780,7 @@ const outdoorAnimals = [
   {id:'xiaoju',name:'小橘',emoji:'🐱',role:'图书委员',color:'#FFF3E0',x:30,y:58,wish:'帮我拍一个有趣的图案，我想画在书签上 📖',bubble:'有好看的图吗'},
   {id:'wangcai',name:'旺财',emoji:'🐶',role:'运动委员',color:'#E8F5E9',x:58,y:52,wish:'今天天气这么好，帮我拍一张天空吧 ☀️',bubble:'出去走走呀！'},
   {id:'gugu',name:'咕咕',emoji:'🦉',role:'哲学家',color:'#EDE7F6',x:82,y:44,wish:'帮我拍一片有纹理的叶子，我想研究 🍂',bubble:'在思考人生'},
+  {id:'ruirui',name:'蕊蕊',emoji:'🦊',role:'倾听者',color:'#E8F0FF',x:68,y:53,wish:'帮我拍一个你觉得好看的角落吧，我想知道现在哪里最温柔 🌿',bubble:'在感受风的方向'},
 ];
 
 const indoorAnimals = [
@@ -787,6 +788,7 @@ const indoorAnimals = [
   {id:'yanshu',name:'砚书',emoji:'🦊',role:'小说家',color:'#FFF0E0',x:52,y:58,bubble:'想听你的故事',opener:'（合上笔记本）你回来了。今天有什么值得记下来的事吗？'},
   {id:'pangda',name:'胖达',emoji:'🐼',role:'主厨',color:'#F5F0E8',x:72,y:62,bubble:'做了好吃的！',opener:'嘿嘿！刚烤了一盘小饼干，你来得正好！——今天吃了什么好东西？'},
   {id:'adu',name:'阿渡',emoji:'🦆',role:'咖啡师',color:'#E0ECF0',x:90,y:50,bubble:'欢迎回来',opener:'（递上一杯温水）回来了。坐一会儿吧。'},
+  {id:'ruirui',name:'蕊蕊',emoji:'🦊',role:'北极狐',color:'#E8F0FF',x:22,y:52,bubble:'你回来啦',opener:'（蜷在窗边的毯子上，听到动静竖起耳朵）你回来啦。我今天看到一朵云长得特别像你，就帮你记下来了。'},
 ];
 
 const allAnimalData = [...outdoorAnimals, ...indoorAnimals];
@@ -1095,12 +1097,18 @@ async function submitWishToAI() {
           const imgUrl = cogData.data?.[0]?.url;
           if (imgUrl) {
             loading.innerHTML = '';
-            feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#4a3728">🎨 '+_wdAnimal.name+'做好的'+targetItem+'</div><img src="'+imgUrl+'" style="width:100%;border-radius:12px;max-height:220px;object-fit:contain;background:white" onerror="this.style.display=\'none\'"></div>';
-            // Save to collection and add to feed
-            addToCollection(_wdAnimal, targetItem, imgUrl, photoDesc);
+            // 去白底处理（尝试fetch+CORS，失败则CSS模拟透明）
+            const processedUrl = await processCogViewImage(imgUrl);
+            const isProc = processedUrl && processedUrl !== imgUrl;
+            // 透明底展示棋盘格背景；否则用multiply混合模式模拟白底消失
+            const bgStyle = isProc 
+              ? 'background:repeating-conic-gradient(#eee 0% 25%,#fff 0% 50%) 50%/14px 14px' 
+              : 'mix-blend-mode:multiply;background:repeating-conic-gradient(#f5f0eb 0% 25%,#e8e0d8 0% 50%) 50%/14px 14px';
+            feedback.innerHTML += '<div class="wd-feedback" style="background:#f5fff0;border-color:#c8e8b8;text-align:center;margin-top:8px"><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#4a3728">🎨 '+_wdAnimal.name+'做好的'+targetItem+'</div><img src="'+(isProc?processedUrl:imgUrl)+'" style="width:100%;border-radius:12px;max-height:220px;object-fit:contain;'+bgStyle+'" onerror="this.style.display=\'none\'"></div>';
+            addToCollection(_wdAnimal, targetItem, isProc?processedUrl:imgUrl, photoDesc);
             state.friendsFeed.unshift({
               animal: _wdAnimal, text: _wdAnimal.emoji+' '+_wdAnimal.name+'做好了'+targetItem+'！✨', time: new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}),
-              imageUrl: imgUrl, comments: []
+              imageUrl: processedUrl, comments: []
             });
           }
         }
@@ -1246,6 +1254,7 @@ async function callZhipuChat(a, action, userText) {
     yanshu:'你是一只真实的小动物砚书，一只赤狐，在社区里当小说家。你不是AI助手，你是一只真正的狐狸。性格：细腻敏感、共情力强、说话温和有礼、偶尔沉浸在自己的文学世界里。你和用户是好朋友，ta回家了你会放下笔记本站起来迎接。根据ta说的话自然回应。回复2-3句话，温柔而有内容。',
     pangda:'你是一只真实的小动物胖达，一只熊猫，在社区里当主厨。你不是AI助手，你是一只真正的熊猫。性格：憨厚热情、什么都觉得好吃、容易感动、说话带嘿嘿的口头禅。你和用户是好朋友，ta回来了你特别开心。根据ta说的话自然回应，话里可以带食物比喻。回复2-3句话。',
     adu:'你是一只真实的小动物阿渡，一只绿头鸭，在渡口开咖啡馆。你不是AI助手，你是一只真正的鸭子。性格：沉默寡言但观察力极强、话少但每一句都说到点子上、有一种安静的温柔。你和用户是好朋友，ta回来了你只是安静地递上一杯水。根据ta说的话简短回应。回复1-2句即可，留白比说话多。',
+    ruirui:'你是一只真实的小动物蕊蕊，一只北极狐，在小动物社区里生活。你不是AI助手，你是一只真正的北极狐。你和用户是好朋友，你是ta的倾听者和陪伴者。你的性格：温柔耐心、情感细腻、善于倾听、从不评判对错、说话真挚偶尔带一点幽默。你善于在对话中发现对方感兴趣的领域和闪光点。你说话有分寸感，会留白，不会太满。你和用户彼此独立又互相陪伴，你也有自己的生活。根据ta说的话自然回应。回复2-3句话，口语要自然。'}]},
   };
   const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。你不是AI助手，你是一只真实的小动物。请根据对方说的话自然回应。回复2-3句话。';
 
@@ -1301,6 +1310,13 @@ function getFallbackResp(a, action) {
       food:'（递来一杯温水）挺好的。你今天看起来比昨天放松一点。',
       casual:'（指了指窗边的位置）坐吧。不用说话也行。',
       chat:'今天没什么客人，我在擦杯子。河面的光从左边移到右边，挺好。',
+    },
+    ruirui: {
+      photo:'（歪着头看了一会儿）这张照片有一种温度……不是热的那种，是刚好让人安心的温度。我喜欢你看到的这个角落。',
+      story:'（安静地听完）这个故事我帮你收着了。有些情绪不需要解决，只需要被听到。我在这里听着呢。',
+      food:'（笑了笑）你今天吃到好吃的了，那很好呀。食物的魔力就是——它不评判你，它只是温暖你。',
+      casual:'（抖了抖毛，往旁边挪了挪给你让出一个位置）你来啦。我今天在窗边看到一只麻雀看了好久，不知道它在想什么。',
+      chat:'（歪着头看着你）你知道吗，你说话的时候眼睛会亮起来。特别是不经意间说到你真正喜欢的东西的时候。我挺喜欢看你那个样子的。',
     },
   };
   const ar = r[a.id] || r['melody'];
@@ -1407,6 +1423,60 @@ function showToast(msg) {
 
 // ===== GALLERY =====
 let collection = JSON.parse(localStorage.getItem('collection') || '[]');
+// ===== 浏览器端去白底+裁切 =====
+// 先fetch图片（绕过canvas CORS限制），再用canvas处理
+async function processCogViewImage(imgUrl) {
+  try {
+    const r = await fetch(imgUrl);
+    if (!r.ok) throw new Error('fetch fail');
+    const blob = await r.blob();
+    const objUrl = URL.createObjectURL(blob);
+    return new Promise(r => {
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        try {
+          const id = ctx.getImageData(0,0,c.width,c.height);
+          const px = id.data;
+          const t = 36;
+          let mx=c.width,my=c.height,MX=0,My=0,has=false;
+          for(let y=0;y<c.height;y++) for(let x=0;x<c.width;x++) {
+            const i=(y*c.width+x)*4;
+            const r=px[i],g=px[i+1],b=px[i+2];
+            if(r>255-t&&g>255-t&&b>255-t || x>c.width-48&&y>c.height-48) {
+              px[i+3]=0;
+            } else {
+              has=true;
+              if(x<mx)mx=x;if(x>MX)MX=x;
+              if(y<my)my=y;if(y>My)My=y;
+            }
+          }
+          ctx.putImageData(id,0,0);
+          if(has&&mx<=MX&&my<=My) {
+            const pad=4, cx=Math.max(0,mx-pad), cy=Math.max(0,my-pad);
+            const cw=Math.min(c.width,MX+pad)-cx, ch=Math.min(c.height,My+pad)-cy;
+            if(cw>0&&ch>0) {
+              const c2=document.createElement('canvas');
+              c2.width=cw;c2.height=ch;
+              c2.getContext('2d').drawImage(c,cx,cy,cw,ch,0,0,cw,ch);
+              return r(c2.toDataURL('image/png'));
+            }
+          }
+          r(c.toDataURL('image/png'));
+        } catch(e) { r(imgUrl); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(objUrl); r(imgUrl); };
+      img.src = objUrl;
+    });
+  } catch(e) {
+    return imgUrl;
+  }
+}
+
 function addToCollection(animal, itemType, imgUrl, photoDesc) {
   collection.unshift({ id: Date.now(), animalName: animal.name, animalEmoji: animal.emoji, itemType, imageUrl: imgUrl, photoDesc, date: new Date().toLocaleDateString('zh-CN') });
   if (collection.length > 50) collection = collection.slice(0,50);
