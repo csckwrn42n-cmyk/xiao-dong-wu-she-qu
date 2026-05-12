@@ -797,8 +797,13 @@ const allAnimalData = [...outdoorAnimals, ...indoorAnimals];
 // 智谱 API 配置
 const ZHIPU_KEY = '7f053966db3e49a7ab15a0eb7ae60492.ob7si5AaImMKdAUR';
 const ZHIPU_VISION_MODEL = 'glm-4v-flash';
-const ZHIPU_CHAT_MODEL = 'glm-4v-flash';  // 已验证可用的模型
+const ZHIPU_CHAT_MODEL = 'glm-4v-flash';
 const ZHIPU_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
+// DeepSeek 配置（屋内对话使用）
+const DEEPSEEK_KEY = 'sk-1b56d194d50e47a4a08bc4db14fe0ee1';
+const DEEPSEEK_MODEL = 'deepseek-chat';
+const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 let state = {
   mode: 'outdoor',
@@ -1176,6 +1181,7 @@ function approachIndoor(id) {
   const a = indoorAnimals.find(x => x.id === id);
   if (!a) return;
   state.currentAnimal = a;
+  state.usingDeepSeek = true;  // 屋内对话使用 DeepSeek
   const ov = document.getElementById('dialogueOverlay');
   ov.classList.add('show');
   document.getElementById('dialoguePortrait').style.background = a.color;
@@ -1235,7 +1241,11 @@ async function handleResponse(action, userText) {
 
   let resp;
   try {
-    resp = await callZhipuChat(a, action, userText);
+    if (state.usingDeepSeek) {
+      resp = await callDeepSeekChat(a, action, userText);
+    } else {
+      resp = await callZhipuChat(a, action, userText);
+    }
   } catch(e) {
     console.warn('AI chat failed:', e);
     showDialogueText('（小动物歪了歪头……' + e.message.substring(0,60) + '）\n' + getFallbackResp(a, action));
@@ -1246,6 +1256,46 @@ async function handleResponse(action, userText) {
   showDialogueText(resp);
   state.isAiProcessing = false;
   setTimeout(() => { if (state.currentAnimal) showResponseOptions(a); }, 500);
+}
+
+async function callDeepSeek(messages, temp=0.85, maxT=300) {
+  const res = await fetch(DEEPSEEK_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+DEEPSEEK_KEY},
+    body:JSON.stringify({model:DEEPSEEK_MODEL,messages,stream:false,temperature:temp,max_tokens:maxT})
+  });
+  if (!res.ok) { const t=await res.text(); throw new Error('DS '+res.status+': '+t.slice(0,80)); }
+  const d = await res.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+async function callDeepSeekChat(a, action, userText) {
+  const systemPrompts = {
+    melody:'你是一只真实的小动物Melody，一只金丝雀，在社区里当流行歌手。你不是AI助手，你是一只真正的小鸟。性格：元气满满、爱美爱打扮、对视觉很挑剔、说话带感叹号、经常用音乐来比喻。你和用户是好朋友，ta回家了你很开心。根据ta说的话自然回应，像朋友聊天一样。回复2-3句话，口语化，不要提你是AI。',
+    yanshu:'你是一只真实的小动物砚书，一只赤狐，在社区里当小说家。你不是AI助手，你是一只真正的狐狸。性格：细腻敏感、共情力强、说话温和有礼、偶尔沉浸在自己的文学世界里。你和用户是好朋友，ta回家了你会放下笔记本站起来迎接。根据ta说的话自然回应。回复2-3句话，温柔而有内容。',
+    pangda:'你是一只真实的小动物胖达，一只熊猫，在社区里当主厨。你不是AI助手，你是一只真正的熊猫。性格：憨厚热情、什么都觉得好吃、容易感动、说话带嘿嘿的口头禅。你和用户是好朋友，ta回来了你特别开心。根据ta说的话自然回应，话里可以带食物比喻。回复2-3句话。',
+    adu:'你是一只真实的小动物阿渡，一只绿头鸭，在渡口开咖啡馆。你不是AI助手，你是一只真正的鸭子。性格：沉默寡言但观察力极强、话少但每一句都说到点子上、有一种安静的温柔。你和用户是好朋友，ta回来了你只是安静地递上一杯水。根据ta说的话简短回应。回复1-2句即可，留白比说话多。',
+    ruirui:'你是一只真实的小动物蕊蕊，一只北极狐，在小动物社区里生活。你不是AI助手，你是一只真正的北极狐。你和用户是好朋友，你是ta的倾听者和陪伴者。你的性格：温柔耐心、情感细腻、善于倾听、从不评判对错、说话真挚偶尔带一点幽默。你善于在对话中发现对方感兴趣的领域和闪光点。你说话有分寸感，会留白，不会太满。你和用户彼此独立又互相陪伴，你也有自己的生活。根据ta说的话自然回应。回复2-3句话，口语要自然。',
+  };
+  const sys = systemPrompts[a.id] || '你是一只温暖的小动物，正在和好朋友聊天。你不是AI助手，你是一只真实的小动物。请根据对方说的话自然回应。回复2-3句话。';
+  if (userText) {
+    return await callDeepSeek([
+      {role:'system', content: sys},
+      {role:'user', content: userText}
+    ], 0.85, 300);
+  }
+  const actionPrompts = {
+    photo:'用户给你看了一张ta今天拍的照片。请你看看这张照片，说几句温暖的话。回复2-3句话。',
+    story:'用户想和你分享一个今天发生的故事。你认真倾听，并温柔回应。回复2-3句话。',
+    food:'用户想和你聊今天吃了什么。你像个朋友一样回应。回复2-3句话。',
+    casual:'你和用户随意聊天。像朋友一样自然回应。回复2-3句话。',
+    chat:'用户想和你聊天。你温柔地回应，问问ta今天怎么样。回复2-3句话。',
+  };
+  const prompt = actionPrompts[action] || actionPrompts.casual;
+  return await callDeepSeek([
+    {role:'system', content: sys},
+    {role:'user', content: prompt}
+  ], 0.85, 200);
 }
 
 async function callZhipuChat(a, action, userText) {
@@ -1326,6 +1376,7 @@ function getFallbackResp(a, action) {
 function closeDialogue() {
   document.getElementById('dialogueOverlay').classList.remove('show');
   state.currentAnimal = null;
+  state.usingDeepSeek = false;
   if (state.conversations) {
     // Record talk
     Object.assign(state.talkedToday || {}, { [Date.now()]: true });
